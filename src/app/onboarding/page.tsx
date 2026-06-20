@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Logo } from "@/components/logo";
 import { useRouter } from "next/navigation";
@@ -14,6 +14,7 @@ export default function OnboardingPage() {
   const [step, setStep] = useState<Step>(1);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loadingInitial, setLoadingInitial] = useState(true);
 
   // Step 1 — business info
   const [businessName, setBusinessName] = useState("");
@@ -30,6 +31,32 @@ export default function OnboardingPage() {
   const [stopAddress, setStopAddress] = useState("");
   const [stopStart, setStopStart] = useState("");
   const [stopEnd, setStopEnd] = useState("");
+
+  // Pre-fill business name (and anything else already saved) from signup
+  useEffect(() => {
+    async function loadExisting() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setLoadingInitial(false); return; }
+
+      const { data: vendor } = await supabase
+        .from("vendors")
+        .select("business_name, description, contact_phone, instagram_url, facebook_url, tiktok_url")
+        .eq("user_id", user.id)
+        .single();
+
+      if (vendor) {
+        if (vendor.business_name) setBusinessName(vendor.business_name);
+        if (vendor.description) setDescription(vendor.description);
+        if (vendor.contact_phone) setPhone(vendor.contact_phone);
+        if (vendor.instagram_url) setInstagram(vendor.instagram_url);
+        if (vendor.facebook_url) setFacebook(vendor.facebook_url);
+        if (vendor.tiktok_url) setTiktok(vendor.tiktok_url);
+      }
+      setLoadingInitial(false);
+    }
+    loadExisting();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const totalSteps = 4;
   const progress = (step / totalSteps) * 100;
@@ -107,6 +134,14 @@ export default function OnboardingPage() {
   async function handleFinish() {
     router.push("/dashboard");
     router.refresh();
+  }
+
+  if (loadingInitial) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <p className="text-sm" style={{ color: "var(--brand-charcoal-soft)" }}>Loading...</p>
+      </div>
+    );
   }
 
   return (
@@ -189,9 +224,16 @@ export default function OnboardingPage() {
             <div>
               <div className="text-3xl mb-4">📍</div>
               <h1 className="text-2xl font-bold mb-2" style={{ color: "var(--brand-charcoal)" }}>Add your first stop</h1>
-              <p className="text-sm mb-8" style={{ color: "var(--brand-charcoal-soft)" }}>
-                Where are you parking this week? This shows up on your public page right away. You can skip this and add stops later.
+              <p className="text-sm mb-3" style={{ color: "var(--brand-charcoal-soft)" }}>
+                Where are you parking this week? This shows up on your public page right away.
               </p>
+              <button
+                type="button"
+                onClick={() => { setStopTitle(""); setStopAddress(""); setStopStart(""); setStopEnd(""); setStep(4); }}
+                className="text-sm font-medium underline mb-6"
+                style={{ color: "var(--brand-green-dark)" }}>
+                Skip this for now — I'll add it later →
+              </button>
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium mb-1.5">Where</label>
