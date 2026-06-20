@@ -1,0 +1,32 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #2C2C2A;
+
+  /* VendorBeacon brand */
+  --brand-green: #639922;
+  --brand-green-dark: #3B6D11;
+  --brand-green-light: #EAF3DE;
+  --brand-charcoal: #2C2C2A;
+  --brand-charcoal-soft: #5F5E5A;
+  --brand-line: #D3D1C7;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-brand: var(--brand-green);
+  --color-brand-dark: var(--brand-green-dark);
+  --color-brand-light: var(--brand-green-light);
+  --color-charcoal: var(--brand-charcoal);
+  --color-charcoal-soft: var(--brand-charcoal-soft);
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, monospace;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
