@@ -171,10 +171,87 @@ export async function syncSubscriptionStatus(
     );
 
   // Update vendor.is_pro cache
+  const { data: vendorBefore } = await supabase
+    .from("vendors")
+    .select("is_pro, referred_by, referral_reward_applied_until")
+    .eq("id", vendor.id)
+    .single();
+
   await supabase
     .from("vendors")
     .update({ is_pro: isPro })
     .eq("id", vendor.id);
+
+  // Reward the referrer the FIRST time this vendor goes Pro (not on every renewal)
+  const wasAlreadyPro = vendorBefore?.is_pro ?? false;
+  const justBecamePro = isPro && !wasAlreadyPro;
+
+  if (justBecamePro && vendorBefore?.referred_by) {
+    await applyReferralReward(vendorBefore.referred_by);
+  }
+}
+
+// Grants the referrer one free month of Pro by pushing back their
+// reward-covered period. If they're not currently Pro themselves,
+// this still banks the month for whenever they do subscribe.
+async function applyReferralReward(referrerId: string): Promise<void> {
+  const supabase = createServiceClient();
+
+  const { data: referrer } = await supabase
+    .from("vendors")
+    .select("id, contact_email, business_name, referral_reward_months, referral_reward_applied_until, stripe_customer_id")
+    .eq("id", referrerId)
+    .single();
+
+  if (!referrer) return;
+
+  const newRewardMonths = (referrer.referral_reward_months ?? 0) + 1;
+
+  // Extend their free-coverage window by 30 days from whichever is later:
+  // now, or their existing reward-covered-until date (stacks rewards).
+  const base = referrer.referral_reward_applied_until && new Date(referrer.referral_reward_applied_until) > new Date()
+    ? new Date(referrer.referral_reward_applied_until)
+    : new Date();
+  const newAppliedUntil = new Date(base.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+  await supabase
+    .from("vendors")
+    .update({
+      referral_reward_months: newRewardMonths,
+      referral_reward_applied_until: newAppliedUntil.toISOString(),
+    })
+    .eq("id", referrerId);
+
+  // Notify the referrer they earned a free month
+  if (process.env.RESEND_API_KEY && referrer.contact_email) {
+    try {
+      const { Resend } = await import("resend");
+      const resend = new Resend(process.env.RESEND_API_KEY);
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://vendorbeacon.app";
+
+      await resend.emails.send({
+        from: process.env.BOOKING_NOTIFICATION_FROM_EMAIL ?? "VendorBeacon <notifications@vendorbeacon.app>",
+        to: referrer.contact_email,
+        subject: "You earned a free month of Pro! 🎉",
+        html: `<!DOCTYPE html><html><head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#f0f0ee;font-family:-apple-system,sans-serif;">
+<div style="max-width:520px;margin:40px auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08)">
+  <div style="background:#639922;padding:28px 36px;text-align:center"><div style="font-size:22px;font-weight:800;color:#fff">VendorBeacon</div></div>
+  <div style="padding:32px 36px;text-align:center">
+    <div style="font-size:36px;margin-bottom:12px">🎉</div>
+    <h1 style="font-size:20px;font-weight:700;color:#2C2C2A;margin:0 0 8px">You earned a free month of Pro!</h1>
+    <p style="font-size:14px;color:#5F5E5A;margin:0 0 20px;line-height:1.6">
+      Someone you referred just upgraded to Pro. Thanks for spreading the word, ${referrer.business_name}! We've added a free month to your account.
+    </p>
+    <a href="${appUrl}/dashboard/settings" style="display:inline-block;background:#639922;color:#fff;text-decoration:none;padding:12px 24px;border-radius:10px;font-size:14px;font-weight:700">View your account →</a>
+  </div>
+  <div style="background:#f8f8f6;padding:16px 36px;text-align:center;border-top:1px solid #D3D1C7"><p style="font-size:11px;color:#5F5E5A;margin:0">VendorBeacon · <a href="${appUrl}" style="color:#639922">vendorbeacon.app</a></p></div>
+</div></body></html>`,
+      });
+    } catch (err) {
+      console.error("Referral reward email error:", err);
+    }
+  }
 }
 
 // Simple typed API error class

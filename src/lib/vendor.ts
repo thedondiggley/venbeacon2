@@ -23,6 +23,10 @@ export type Vendor = {
   water_needs: boolean;
   insurance_info: string | null;
   disabled: boolean;
+  referral_code: string | null;
+  referred_by: string | null;
+  referral_reward_months: number;
+  referral_reward_applied_until: string | null;
   created_at: string;
   updated_at: string;
 };

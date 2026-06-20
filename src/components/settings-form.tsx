@@ -172,8 +172,11 @@ export function SettingsForm({ vendor }: { vendor: Vendor }) {
       {/* Contact */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium mb-1.5">Phone number</label>
+          <label className="block text-sm font-medium mb-1.5">Public phone number</label>
           <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="(423) 555-0000" className={inputCls} style={inputStyle} />
+          <p className="text-xs mt-1" style={{ color: "var(--brand-charcoal-soft)" }}>
+            Shown on your public page so customers and venues can call you directly. Use whatever number you want the public reaching you on.
+          </p>
         </div>
         <div>
           <label className="block text-sm font-medium mb-1.5">Website</label>

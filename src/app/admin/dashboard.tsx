@@ -2,17 +2,19 @@
 
 import { useState } from "react";
 
-type Stats = { vendorCount: number; venueCount: number; bookingCount: number; proVendors: number; pendingVenues: number };
+type Stats = { vendorCount: number; venueCount: number; bookingCount: number; proVendors: number; pendingVenues: number; feedbackCount: number; newFeedback: number };
 
-export default function AdminDashboard({ stats, vendors, venues, bookings, recentVendors, recentVenues }: {
+export default function AdminDashboard({ stats, vendors, venues, bookings, recentVendors, recentVenues, feedback, funnel }: {
   stats: Stats;
   vendors: any[];
   venues: any[];
   bookings: any[];
   recentVendors: any[];
   recentVenues: any[];
+  feedback: any[];
+  funnel: { stepReachedCounts: Record<number, number>; step3Skipped: number; completed: number };
 }) {
-  const [tab, setTab] = useState<"overview"|"vendors"|"venues"|"bookings">("overview");
+  const [tab, setTab] = useState<"overview"|"vendors"|"venues"|"bookings"|"feedback">("overview");
   const [venueSearch, setVenueSearch] = useState("");
   const [vendorSearch, setVendorSearch] = useState("");
 
@@ -46,6 +48,11 @@ export default function AdminDashboard({ stats, vendors, venues, bookings, recen
     window.location.reload();
   }
 
+  async function updateFeedbackStatus(id: string, status: string) {
+    await fetch("/api/admin/feedback", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, status }) });
+    window.location.reload();
+  }
+
   const tabBtn = (key: typeof tab, label: string) => (
     <button onClick={() => setTab(key)}
       className="px-4 py-2.5 text-sm border-b-2 transition"
@@ -65,13 +72,14 @@ export default function AdminDashboard({ stats, vendors, venues, bookings, recen
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 px-6 py-4">
+      <div className="grid grid-cols-2 sm:grid-cols-6 gap-3 px-6 py-4">
         {[
           { label: "Total vendors", value: stats.vendorCount },
           { label: "Pro vendors", value: stats.proVendors, highlight: true },
           { label: "Venue listings", value: stats.venueCount },
           { label: "Pending approval", value: stats.pendingVenues, alert: stats.pendingVenues > 0 },
           { label: "Total bookings", value: stats.bookingCount },
+          { label: "New feedback", value: stats.newFeedback, alert: stats.newFeedback > 0 },
         ].map(s => (
           <div key={s.label} className="bg-white rounded-xl border p-4 text-center" style={{ borderColor: s.alert ? "#FCA5A5" : "#D3D1C7", background: s.alert ? "#FEF2F2" : "#fff" }}>
             <div className="text-2xl font-bold" style={{ color: s.highlight ? "#639922" : s.alert ? "#DC2626" : "#2C2C2A" }}>{s.value}</div>
@@ -86,12 +94,48 @@ export default function AdminDashboard({ stats, vendors, venues, bookings, recen
         {tabBtn("vendors", `Vendors (${stats.vendorCount})`)}
         {tabBtn("venues", `Venues (${stats.venueCount})`)}
         {tabBtn("bookings", `Bookings (${stats.bookingCount})`)}
+        {tabBtn("feedback", `Feedback (${stats.feedbackCount})`)}
       </div>
 
       <div className="px-6 py-6">
 
         {/* OVERVIEW */}
         {tab === "overview" && (
+          <div className="space-y-6">
+            {/* Onboarding funnel */}
+            <div className="bg-white rounded-xl border p-4" style={{ borderColor: "#D3D1C7" }}>
+              <h2 className="text-sm font-semibold mb-3">Onboarding funnel</h2>
+              <div className="space-y-2">
+                {[1, 2, 3, 4].map(stepNum => {
+                  const count = funnel.stepReachedCounts[stepNum] ?? 0;
+                  const maxCount = funnel.stepReachedCounts[1] || 1;
+                  const pct = Math.round((count / maxCount) * 100);
+                  const labels: Record<number, string> = { 1: "Business info", 2: "Social links", 3: "First stop", 4: "Completed screen" };
+                  return (
+                    <div key={stepNum}>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-medium" style={{ color: "#2C2C2A" }}>Step {stepNum} — {labels[stepNum]}</span>
+                        <span className="text-xs font-bold" style={{ color: "#639922" }}>{count}</span>
+                      </div>
+                      <div className="h-2 rounded-full" style={{ background: "#F0F0EE" }}>
+                        <div className="h-2 rounded-full transition-all" style={{ width: `${pct}%`, background: "#639922" }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="flex gap-4 mt-4 pt-4 border-t" style={{ borderColor: "#D3D1C7" }}>
+                <div>
+                  <div className="text-lg font-bold" style={{ color: "#854D0E" }}>{funnel.step3Skipped}</div>
+                  <div className="text-xs" style={{ color: "#5F5E5A" }}>Skipped step 3</div>
+                </div>
+                <div>
+                  <div className="text-lg font-bold" style={{ color: "#3B6D11" }}>{funnel.completed}</div>
+                  <div className="text-xs" style={{ color: "#5F5E5A" }}>Completed onboarding</div>
+                </div>
+              </div>
+            </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div className="bg-white rounded-xl border p-4" style={{ borderColor: "#D3D1C7" }}>
               <h2 className="text-sm font-semibold mb-3">Recent vendors</h2>
@@ -133,6 +177,7 @@ export default function AdminDashboard({ stats, vendors, venues, bookings, recen
                 ))}
               </div>
             </div>
+          </div>
           </div>
         )}
 
@@ -273,6 +318,61 @@ export default function AdminDashboard({ stats, vendors, venues, bookings, recen
                 </tbody>
               </table>
             </div>
+          </div>
+        )}
+
+        {/* FEEDBACK */}
+        {tab === "feedback" && (
+          <div className="space-y-3">
+            {feedback.length === 0 ? (
+              <div className="bg-white rounded-xl border p-8 text-center" style={{ borderColor: "#D3D1C7" }}>
+                <p className="text-sm" style={{ color: "#5F5E5A" }}>No feedback submitted yet.</p>
+              </div>
+            ) : (
+              feedback.map((f: any) => {
+                const categoryLabels: Record<string, string> = { bug: "🐛 Bug", feature_request: "💡 Feature request", general: "💬 General" };
+                const statusColors: Record<string, { bg: string; text: string }> = {
+                  new: { bg: "#FEF9C3", text: "#854D0E" },
+                  reviewing: { bg: "#DBEAFE", text: "#1E40AF" },
+                  planned: { bg: "#E0E7FF", text: "#4338CA" },
+                  done: { bg: "#EAF3DE", text: "#3B6D11" },
+                  wont_fix: { bg: "#F0F0EE", text: "#5F5E5A" },
+                };
+                const sc = statusColors[f.status] ?? statusColors.new;
+                return (
+                  <div key={f.id} className="bg-white rounded-xl border p-4" style={{ borderColor: "#D3D1C7" }}>
+                    <div className="flex items-start justify-between gap-3 mb-2">
+                      <div>
+                        <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{ background: "#F0F0EE", color: "#5F5E5A" }}>
+                          {categoryLabels[f.category] ?? f.category}
+                        </span>
+                        <span className="text-xs ml-2" style={{ color: "#5F5E5A" }}>
+                          {f.vendor_name || "Anonymous"} {f.vendor_email ? `· ${f.vendor_email}` : ""}
+                        </span>
+                      </div>
+                      <span className="text-xs" style={{ color: "#5F5E5A" }}>{new Date(f.created_at).toLocaleDateString()}</span>
+                    </div>
+                    <p className="text-sm mb-3" style={{ color: "#2C2C2A" }}>{f.message}</p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: sc.bg, color: sc.text }}>
+                        {f.status.replace("_", " ")}
+                      </span>
+                      <select
+                        value={f.status}
+                        onChange={e => updateFeedbackStatus(f.id, e.target.value)}
+                        className="text-xs rounded border px-2 py-1"
+                        style={{ borderColor: "#D3D1C7" }}>
+                        <option value="new">New</option>
+                        <option value="reviewing">Reviewing</option>
+                        <option value="planned">Planned</option>
+                        <option value="done">Done</option>
+                        <option value="wont_fix">Won't fix</option>
+                      </select>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         )}
       </div>

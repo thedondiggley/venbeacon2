@@ -334,3 +334,38 @@ create index if not exists venue_listings_verification_token_idx on public.venue
 -- Vendor disable flag (admin moderation)
 alter table public.vendors
   add column if not exists disabled boolean not null default false;
+
+-- Referral program (v5)
+alter table public.vendors
+  add column if not exists referral_code text unique,
+  add column if not exists referred_by uuid references public.vendors(id) on delete set null,
+  add column if not exists referral_reward_months integer not null default 0,
+  add column if not exists referral_reward_applied_until timestamptz;
+
+create index if not exists vendors_referral_code_idx on public.vendors(referral_code);
+create index if not exists vendors_referred_by_idx on public.vendors(referred_by);
+
+-- Feedback / suggestions (v5)
+create table if not exists public.feedback (
+  id uuid primary key default gen_random_uuid(),
+  vendor_id uuid references public.vendors(id) on delete set null,
+  vendor_name text,
+  vendor_email text,
+  category text not null default 'general' check (category in ('bug', 'feature_request', 'general')),
+  message text not null,
+  status text not null default 'new' check (status in ('new', 'reviewing', 'planned', 'done', 'wont_fix')),
+  created_at timestamptz not null default now()
+);
+
+create index if not exists feedback_status_idx on public.feedback(status);
+create index if not exists feedback_vendor_id_idx on public.feedback(vendor_id);
+
+alter table public.feedback enable row level security;
+
+create policy "Vendors can submit feedback"
+  on public.feedback for insert
+  with check (true);
+
+create policy "Vendors can view own feedback"
+  on public.feedback for select
+  using (vendor_id in (select id from public.vendors where user_id = auth.uid()));

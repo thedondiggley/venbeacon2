@@ -1,6 +1,7 @@
 import { getCurrentVendor } from "@/lib/vendor";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
+import { FeedbackForm } from "@/components/feedback-form";
 
 export default async function DashboardHome() {
   const vendor = await getCurrentVendor();
@@ -317,6 +318,15 @@ export default async function DashboardHome() {
           style={{ background: "var(--brand-green-light)", color: "var(--brand-green-dark)" }}>
           vendorbeacon.app/t/{vendor.slug}
         </div>
+      </div>
+
+      {/* Feedback */}
+      <div className="rounded-xl border p-4" style={{ borderColor: "var(--brand-line)" }}>
+        <h2 className="text-sm font-semibold mb-1">Got feedback?</h2>
+        <p className="text-sm mb-4" style={{ color: "var(--brand-charcoal-soft)" }}>
+          Found a bug, have an idea, or just want to tell us something? We read everything.
+        </p>
+        <FeedbackForm vendorId={vendor.id} vendorName={vendor.business_name} vendorEmail={vendor.contact_email} />
       </div>
     </div>
   );

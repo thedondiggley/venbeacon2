@@ -15,6 +15,16 @@ export default function OnboardingPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loadingInitial, setLoadingInitial] = useState(true);
+  const [vendorId, setVendorId] = useState<string | null>(null);
+
+  async function logEvent(eventType: string, metadata?: Record<string, unknown>) {
+    if (!vendorId) return;
+    try {
+      await supabase.from("analytics_events").insert({ vendor_id: vendorId, event_type: eventType, metadata: metadata ?? null });
+    } catch {
+      // analytics should never block the user
+    }
+  }
 
   // Step 1 — business info
   const [businessName, setBusinessName] = useState("");
@@ -40,17 +50,23 @@ export default function OnboardingPage() {
 
       const { data: vendor } = await supabase
         .from("vendors")
-        .select("business_name, description, contact_phone, instagram_url, facebook_url, tiktok_url")
+        .select("id, business_name, description, contact_phone, instagram_url, facebook_url, tiktok_url")
         .eq("user_id", user.id)
         .single();
 
       if (vendor) {
+        setVendorId(vendor.id);
         if (vendor.business_name) setBusinessName(vendor.business_name);
         if (vendor.description) setDescription(vendor.description);
         if (vendor.contact_phone) setPhone(vendor.contact_phone);
         if (vendor.instagram_url) setInstagram(vendor.instagram_url);
         if (vendor.facebook_url) setFacebook(vendor.facebook_url);
         if (vendor.tiktok_url) setTiktok(vendor.tiktok_url);
+
+        // Log step 1 reached now that we have a vendor id
+        try {
+          await supabase.from("analytics_events").insert({ vendor_id: vendor.id, event_type: "onboarding_step_reached", metadata: { step: 1 } });
+        } catch { /* ignore */ }
       }
       setLoadingInitial(false);
     }
@@ -128,10 +144,15 @@ export default function OnboardingPage() {
     if (step === 1) ok = await saveStep1();
     if (step === 2) ok = await saveStep2();
     if (step === 3) ok = await saveStep3();
-    if (ok) setStep(s => (s + 1) as Step);
+    if (ok) {
+      const nextStep = (step + 1) as Step;
+      setStep(nextStep);
+      logEvent("onboarding_step_reached", { step: nextStep });
+    }
   }
 
   async function handleFinish() {
+    logEvent("onboarding_completed", { skipped_stop: !stopTitle });
     router.push("/dashboard");
     router.refresh();
   }
@@ -229,7 +250,12 @@ export default function OnboardingPage() {
               </p>
               <button
                 type="button"
-                onClick={() => { setStopTitle(""); setStopAddress(""); setStopStart(""); setStopEnd(""); setStep(4); }}
+                onClick={() => {
+                  setStopTitle(""); setStopAddress(""); setStopStart(""); setStopEnd("");
+                  logEvent("onboarding_step_skipped", { step: 3 });
+                  setStep(4);
+                  logEvent("onboarding_step_reached", { step: 4 });
+                }}
                 className="text-sm font-medium underline mb-6"
                 style={{ color: "var(--brand-green-dark)" }}>
                 Skip this for now — I'll add it later →
@@ -275,6 +301,21 @@ export default function OnboardingPage() {
               <p className="text-sm mb-8" style={{ color: "var(--brand-charcoal-soft)" }}>
                 Your public page is live. Share your link everywhere to let customers and venues know where to find you.
               </p>
+
+              {!stopTitle && (
+                <div className="rounded-xl border p-4 mb-6 text-left flex items-start gap-3"
+                  style={{ borderColor: "var(--brand-line)", background: "#fafaf8" }}>
+                  <span className="text-xl shrink-0">📍</span>
+                  <div>
+                    <p className="text-sm font-medium" style={{ color: "var(--brand-charcoal)" }}>
+                      Haven't added a stop yet?
+                    </p>
+                    <p className="text-sm mt-0.5" style={{ color: "var(--brand-charcoal-soft)" }}>
+                      No rush — you can add your schedule anytime from <strong>Schedule</strong> in your dashboard.
+                    </p>
+                  </div>
+                </div>
+              )}
 
               <div className="rounded-xl border p-5 mb-6 text-left" style={{ background: "var(--brand-green-light)", borderColor: "#a8cf72" }}>
                 <p className="text-xs font-bold uppercase tracking-wide mb-2" style={{ color: "var(--brand-green-dark)" }}>
