@@ -24,3 +24,26 @@ export async function PATCH(req: NextRequest) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
 }
+
+export async function DELETE(req: NextRequest) {
+  if (!await isAdmin()) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+
+  const { id } = await req.json();
+  if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
+
+  const supabase = createServiceClient();
+
+  // Get the auth user_id before deleting the vendor row
+  const { data: vendor } = await supabase.from("vendors").select("user_id").eq("id", id).single();
+
+  // Delete the vendor record (cascades to locations, bookings, etc. via FK constraints)
+  const { error: deleteError } = await supabase.from("vendors").delete().eq("id", id);
+  if (deleteError) return NextResponse.json({ error: deleteError.message }, { status: 500 });
+
+  // Also delete their auth account so the email can sign up fresh if needed
+  if (vendor?.user_id) {
+    await supabase.auth.admin.deleteUser(vendor.user_id).catch(() => {});
+  }
+
+  return NextResponse.json({ ok: true });
+}

@@ -36,7 +36,7 @@ export default function AdminDashboard({ stats, vendors, venues, bookings, recen
   }
 
   async function rejectVenue(id: string) {
-    if (!confirm("Delete this venue listing?")) return;
+    if (!confirm("Permanently delete this venue listing? This cannot be undone.")) return;
     await fetch("/api/admin/venues", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) });
     window.location.reload();
   }
@@ -45,6 +45,13 @@ export default function AdminDashboard({ stats, vendors, venues, bookings, recen
     const action = currentlyDisabled ? "re-enable" : "disable";
     if (!confirm(`Are you sure you want to ${action} this vendor account?`)) return;
     await fetch("/api/admin/vendors", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, disabled: !currentlyDisabled }) });
+    window.location.reload();
+  }
+
+  async function deleteVendor(id: string, businessName: string) {
+    if (!confirm(`Permanently delete "${businessName}"? This removes their account, schedule, bookings, and venue listings tied to them. This cannot be undone.`)) return;
+    if (!confirm(`Last check — type-confirm by clicking OK again to permanently delete "${businessName}".`)) return;
+    await fetch("/api/admin/vendors", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) });
     window.location.reload();
   }
 
@@ -226,6 +233,11 @@ export default function AdminDashboard({ stats, vendors, venues, bookings, recen
                             className="text-xs underline"
                             style={{ color: v.disabled ? "#639922" : "#A32D2D" }}>
                             {v.disabled ? "Re-enable" : "Disable"}
+                          </button>
+                          <button onClick={() => deleteVendor(v.id, v.business_name)}
+                            className="text-xs underline"
+                            style={{ color: "#A32D2D", fontWeight: 600 }}>
+                            Delete
                           </button>
                         </div>
                       </td>
