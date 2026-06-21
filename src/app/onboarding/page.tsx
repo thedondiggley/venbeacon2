@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Logo } from "@/components/logo";
 import { useRouter } from "next/navigation";
+import { handleToUrl, urlToHandle } from "@/lib/social-handles";
 
 type Step = 1 | 2 | 3 | 4;
 
@@ -59,9 +60,9 @@ export default function OnboardingPage() {
         if (vendor.business_name) setBusinessName(vendor.business_name);
         if (vendor.description) setDescription(vendor.description);
         if (vendor.contact_phone) setPhone(vendor.contact_phone);
-        if (vendor.instagram_url) setInstagram(vendor.instagram_url);
-        if (vendor.facebook_url) setFacebook(vendor.facebook_url);
-        if (vendor.tiktok_url) setTiktok(vendor.tiktok_url);
+        if (vendor.instagram_url) setInstagram(urlToHandle("instagram", vendor.instagram_url));
+        if (vendor.facebook_url) setFacebook(urlToHandle("facebook", vendor.facebook_url));
+        if (vendor.tiktok_url) setTiktok(urlToHandle("tiktok", vendor.tiktok_url));
 
         // Log step 1 reached now that we have a vendor id
         try {
@@ -105,7 +106,7 @@ export default function OnboardingPage() {
     if (!user) { setSaving(false); return false; }
 
     const { error } = await supabase.from("vendors")
-      .update({ instagram_url: instagram || null, facebook_url: facebook || null, tiktok_url: tiktok || null })
+      .update({ instagram_url: handleToUrl("instagram", instagram), facebook_url: handleToUrl("facebook", facebook), tiktok_url: handleToUrl("tiktok", tiktok) })
       .eq("user_id", user.id);
 
     if (error) { setError(error.message); setSaving(false); return false; }
@@ -221,19 +222,26 @@ export default function OnboardingPage() {
               <div className="text-3xl mb-4">📱</div>
               <h1 className="text-2xl font-bold mb-2" style={{ color: "var(--brand-charcoal)" }}>Connect your socials</h1>
               <p className="text-sm mb-8" style={{ color: "var(--brand-charcoal-soft)" }}>
-                These show up on your public page so customers and venues can follow you. All optional.
+                Just type your username — we'll build the link for you. These show up on your public page. All optional.
               </p>
               <div className="space-y-4">
                 {[
-                  { label: "Instagram", value: instagram, setter: setInstagram, placeholder: "https://instagram.com/yourtruck" },
-                  { label: "Facebook", value: facebook, setter: setFacebook, placeholder: "https://facebook.com/yourtruck" },
-                  { label: "TikTok", value: tiktok, setter: setTiktok, placeholder: "https://tiktok.com/@yourtruck" },
+                  { label: "Instagram", value: instagram, setter: setInstagram, placeholder: "yourtruck" },
+                  { label: "Facebook", value: facebook, setter: setFacebook, placeholder: "yourtruckpage" },
+                  { label: "TikTok", value: tiktok, setter: setTiktok, placeholder: "yourtruck" },
                 ].map(({ label, value, setter, placeholder }) => (
                   <div key={label}>
                     <label className="block text-sm font-medium mb-1.5">{label}</label>
-                    <input type="url" value={value} onChange={e => setter(e.target.value)} placeholder={placeholder}
-                      className="w-full rounded-lg border px-3 py-2.5 text-sm focus:outline-none focus:ring-2"
-                      style={{ borderColor: "var(--brand-line)" }} />
+                    <div className="relative">
+                      {!value.startsWith("http") && (
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm pointer-events-none" style={{ color: "var(--brand-charcoal-soft)" }}>
+                          @
+                        </span>
+                      )}
+                      <input type="text" value={value} onChange={e => setter(e.target.value)} placeholder={placeholder}
+                        className="w-full rounded-lg border px-3 py-2.5 text-sm focus:outline-none focus:ring-2"
+                        style={{ borderColor: "var(--brand-line)", paddingLeft: !value.startsWith("http") ? "1.75rem" : undefined }} />
+                    </div>
                   </div>
                 ))}
               </div>

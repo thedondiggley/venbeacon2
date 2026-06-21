@@ -369,3 +369,15 @@ create policy "Vendors can submit feedback"
 create policy "Vendors can view own feedback"
   on public.feedback for select
   using (vendor_id in (select id from public.vendors where user_id = auth.uid()));
+
+-- Fix analytics_events for onboarding funnel tracking (v5 patch)
+alter table public.analytics_events drop constraint if exists analytics_events_event_type_check;
+alter table public.analytics_events add constraint analytics_events_event_type_check
+  check (event_type in (
+    'profile_view', 'schedule_view', 'booking_request', 'venue_contact_reveal',
+    'onboarding_step_reached', 'onboarding_step_skipped', 'onboarding_completed'
+  ));
+
+create policy "Vendors can insert own analytics events"
+  on public.analytics_events for insert
+  with check (vendor_id in (select id from public.vendors where user_id = auth.uid()));

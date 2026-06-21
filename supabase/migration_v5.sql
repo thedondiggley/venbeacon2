@@ -42,3 +42,17 @@ create policy "Vendors can view own feedback"
 
 -- Onboarding funnel analytics events use the existing analytics_events table
 -- No new table needed — just new event_type values: 'onboarding_step_reached', 'onboarding_step_skipped', 'onboarding_completed'
+
+-- Fix analytics_events to support onboarding funnel tracking
+-- 1. Expand the check constraint to allow new event types
+alter table public.analytics_events drop constraint if exists analytics_events_event_type_check;
+alter table public.analytics_events add constraint analytics_events_event_type_check
+  check (event_type in (
+    'profile_view', 'schedule_view', 'booking_request', 'venue_contact_reveal',
+    'onboarding_step_reached', 'onboarding_step_skipped', 'onboarding_completed'
+  ));
+
+-- 2. Add missing INSERT policy — vendors can log their own analytics events
+create policy "Vendors can insert own analytics events"
+  on public.analytics_events for insert
+  with check (vendor_id in (select id from public.vendors where user_id = auth.uid()));

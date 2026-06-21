@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Script from "next/script";
 import { Logo } from "@/components/logo";
+import { handleToUrl } from "@/lib/social-handles";
 
 const VENUE_TYPES = [
   { value: "brewery", label: "Brewery / taproom" },
@@ -167,7 +168,7 @@ export default function ListYourVenuePage() {
     const payload = {
       venueName, venueType, venueTypeCustom: venueType === "other" ? otherType : null,
       address, city, zipCode, description,
-      websiteUrl: websiteUrl || null, instagramUrl: instagramUrl || null, facebookUrl: facebookUrl || null,
+      websiteUrl: websiteUrl || null, instagramUrl: handleToUrl("instagram", instagramUrl), facebookUrl: handleToUrl("facebook", facebookUrl),
       daysAvailable, hoursAvailable, maxTrucks: parseInt(maxTrucks) || 1,
       expectedTraffic: expectedTraffic || null, parkingDetails: parkingDetails || null,
       hasElectrical, hasWater, hasRestrooms,
@@ -253,11 +254,27 @@ export default function ListYourVenuePage() {
                 placeholder="Tell food truck operators what makes your spot great — foot traffic, parking, outdoor space, event types, typical customer base, etc."
                 className={inputCls} style={inputStyle} /></div>
             <div><label className="block text-sm font-medium mb-2">Links <span style={{ fontWeight: 400, color: "var(--brand-charcoal-soft)" }}>(optional)</span></label>
+              <p className="text-xs mb-2" style={{ color: "var(--brand-charcoal-soft)" }}>
+                For Instagram and Facebook, just type your username — we'll build the link for you.
+              </p>
               <div className="space-y-2">
-                {[{label:"Website",val:websiteUrl,set:setWebsiteUrl,ph:"https://yourvenue.com"},{label:"Instagram",val:instagramUrl,set:setInstagramUrl,ph:"https://instagram.com/yourvenue"},{label:"Facebook",val:facebookUrl,set:setFacebookUrl,ph:"https://facebook.com/yourvenue"}].map(({label,val,set,ph}) => (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs w-20 shrink-0" style={{ color: "var(--brand-charcoal-soft)" }}>Website</span>
+                  <input type="url" value={websiteUrl} onChange={e => setWebsiteUrl(e.target.value)} placeholder="https://yourvenue.com" className={inputCls} style={inputStyle} />
+                </div>
+                {[
+                  { label: "Instagram", val: instagramUrl, set: setInstagramUrl, ph: "yourvenue" },
+                  { label: "Facebook", val: facebookUrl, set: setFacebookUrl, ph: "yourvenuepage" },
+                ].map(({ label, val, set, ph }) => (
                   <div key={label} className="flex items-center gap-2">
                     <span className="text-xs w-20 shrink-0" style={{ color: "var(--brand-charcoal-soft)" }}>{label}</span>
-                    <input type="url" value={val} onChange={e => set(e.target.value)} placeholder={ph} className={inputCls} style={inputStyle} />
+                    <div className="relative flex-1">
+                      {!val.startsWith("http") && (
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm pointer-events-none" style={{ color: "var(--brand-charcoal-soft)" }}>@</span>
+                      )}
+                      <input type="text" value={val} onChange={e => set(e.target.value)} placeholder={ph}
+                        className={inputCls} style={{ ...inputStyle, paddingLeft: !val.startsWith("http") ? "1.75rem" : undefined }} />
+                    </div>
                   </div>
                 ))}
               </div>

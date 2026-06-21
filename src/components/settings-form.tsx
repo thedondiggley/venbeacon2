@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { handleToUrl, urlToHandle } from "@/lib/social-handles";
 
 const FOOD_TYPES = [
   "American", "BBQ", "Breakfast / Brunch", "Burgers", "Caribbean", "Chinese",
@@ -45,9 +46,9 @@ export function SettingsForm({ vendor }: { vendor: Vendor }) {
   const [foodType, setFoodType] = useState(vendor.food_type ?? "");
   const [serviceAreas, setServiceAreas] = useState(vendor.service_areas ?? "");
   const [websiteUrl, setWebsiteUrl] = useState(vendor.website_url ?? "");
-  const [instagram, setInstagram] = useState(vendor.instagram_url ?? "");
-  const [facebook, setFacebook] = useState(vendor.facebook_url ?? "");
-  const [tiktok, setTiktok] = useState(vendor.tiktok_url ?? "");
+  const [instagram, setInstagram] = useState(urlToHandle("instagram", vendor.instagram_url));
+  const [facebook, setFacebook] = useState(urlToHandle("facebook", vendor.facebook_url));
+  const [tiktok, setTiktok] = useState(urlToHandle("tiktok", vendor.tiktok_url));
   const [powerNeeds, setPowerNeeds] = useState(vendor.power_needs ?? "");
   const [waterNeeds, setWaterNeeds] = useState(vendor.water_needs ?? false);
   const [insuranceInfo, setInsuranceInfo] = useState(vendor.insurance_info ?? "");
@@ -94,9 +95,9 @@ export function SettingsForm({ vendor }: { vendor: Vendor }) {
       food_type: foodType || null,
       service_areas: serviceAreas || null,
       website_url: websiteUrl || null,
-      instagram_url: instagram || null,
-      facebook_url: facebook || null,
-      tiktok_url: tiktok || null,
+      instagram_url: handleToUrl("instagram", instagram),
+      facebook_url: handleToUrl("facebook", facebook),
+      tiktok_url: handleToUrl("tiktok", tiktok),
       power_needs: powerNeeds || null,
       water_needs: waterNeeds,
       insurance_info: insuranceInfo || null,
@@ -187,18 +188,40 @@ export function SettingsForm({ vendor }: { vendor: Vendor }) {
       {/* Social links */}
       <div>
         <label className="block text-sm font-medium mb-2">Social links</label>
+        <p className="text-xs mb-3" style={{ color: "var(--brand-charcoal-soft)" }}>
+          Just type your username — we'll build the link for you. You can also paste a full link if you'd rather.
+        </p>
         <div className="space-y-2">
           {[
-            { label: "Instagram", value: instagram, setter: setInstagram, placeholder: "https://instagram.com/yourtruck" },
-            { label: "Facebook", value: facebook, setter: setFacebook, placeholder: "https://facebook.com/yourtruck" },
-            { label: "TikTok", value: tiktok, setter: setTiktok, placeholder: "https://tiktok.com/@yourtruck" },
-          ].map(({ label, value, setter, placeholder }) => (
+            { label: "Instagram", platform: "instagram" as const, value: instagram, setter: setInstagram, placeholder: "yourtruck" },
+            { label: "Facebook", platform: "facebook" as const, value: facebook, setter: setFacebook, placeholder: "yourtruckpage" },
+            { label: "TikTok", platform: "tiktok" as const, value: tiktok, setter: setTiktok, placeholder: "yourtruck" },
+          ].map(({ label, platform, value, setter, placeholder }) => (
             <div key={label} className="flex items-center gap-2">
               <span className="text-xs w-20 shrink-0" style={{ color: "var(--brand-charcoal-soft)" }}>{label}</span>
-              <input type="url" value={value} onChange={e => setter(e.target.value)} placeholder={placeholder} className={inputCls} style={inputStyle} />
+              <div className="relative flex-1">
+                {!value.startsWith("http") && (
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm pointer-events-none" style={{ color: "var(--brand-charcoal-soft)" }}>
+                    @
+                  </span>
+                )}
+                <input
+                  type="text"
+                  value={value}
+                  onChange={e => setter(e.target.value)}
+                  placeholder={placeholder}
+                  className={inputCls}
+                  style={{ ...inputStyle, paddingLeft: !value.startsWith("http") ? "1.75rem" : undefined }}
+                />
+              </div>
             </div>
           ))}
         </div>
+        {facebook && !facebook.startsWith("http") && (
+          <p className="text-xs mt-2" style={{ color: "var(--brand-charcoal-soft)" }}>
+            We'll link to facebook.com/{facebook.replace(/^@+/, "")} — if that's not right, paste your full Facebook link instead.
+          </p>
+        )}
       </div>
 
       {/* Operational needs */}
