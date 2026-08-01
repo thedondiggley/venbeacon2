@@ -22,7 +22,7 @@ const PRO_FEATURES = [
   "Booking request inbox",
   "Approve & decline bookings",
   "Auto-add approved bookings to schedule",
-  "Saved venues & opportunities",
+  "Referral program — earn free months",
   "Analytics dashboard",
 ];
 
@@ -64,12 +64,10 @@ export default function PricingPage() {
     <div className="min-h-screen bg-white">
       <div className="max-w-4xl mx-auto px-4 py-12">
         <div className="flex justify-center mb-10">
-          <a href="/">
-            <Logo variant="full" size={36} />
-          </a>
+          <a href="/"><Logo variant="full" size={36} /></a>
         </div>
 
-        <div className="text-center mb-12">
+        <div className="text-center mb-8">
           <h1 className="text-3xl font-bold mb-3" style={{ color: "var(--brand-charcoal)" }}>
             Simple, transparent pricing
           </h1>
@@ -78,8 +76,26 @@ export default function PricingPage() {
           </p>
         </div>
 
+        {/* Early adopter banner */}
+        <div className="max-w-2xl mx-auto mb-10 rounded-2xl border p-5 text-center"
+          style={{ background: "var(--brand-green-light)", borderColor: "#a8cf72" }}>
+          <div className="text-lg font-bold mb-1" style={{ color: "var(--brand-green-dark)" }}>
+            🎁 Early Adopter Offer — Limited Time
+          </div>
+          <p className="text-sm" style={{ color: "var(--brand-green-dark)", opacity: 0.9 }}>
+            The first vendors to join receive a promo code for an exclusive deal on Pro access.
+            Sign up free and we'll reach out to you directly with your code.
+          </p>
+          <a href="/signup"
+            className="inline-block mt-3 rounded-xl px-5 py-2 text-sm font-bold text-white"
+            style={{ background: "var(--brand-green)" }}>
+            Claim your early adopter spot →
+          </a>
+        </div>
+
         {error && (
-          <div className="max-w-md mx-auto mb-6 rounded-lg border p-3 text-sm text-center" style={{ borderColor: "#F09595", color: "#A32D2D" }}>
+          <div className="max-w-md mx-auto mb-6 rounded-lg border p-3 text-sm text-center"
+            style={{ borderColor: "#F09595", color: "#A32D2D" }}>
             {error}
           </div>
         )}
@@ -89,12 +105,15 @@ export default function PricingPage() {
           {/* FREE */}
           <div className="rounded-2xl border p-6 flex flex-col" style={{ borderColor: "var(--brand-line)" }}>
             <div className="mb-6">
-              <div className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--brand-charcoal-soft)" }}>Free</div>
+              <div className="text-xs font-semibold uppercase tracking-wider mb-2"
+                style={{ color: "var(--brand-charcoal-soft)" }}>Free</div>
               <div className="flex items-end gap-1">
                 <span className="text-4xl font-bold" style={{ color: "var(--brand-charcoal)" }}>$0</span>
                 <span className="text-sm mb-1" style={{ color: "var(--brand-charcoal-soft)" }}>/month</span>
               </div>
-              <p className="text-sm mt-2" style={{ color: "var(--brand-charcoal-soft)" }}>Build your public presence and get found.</p>
+              <p className="text-sm mt-2" style={{ color: "var(--brand-charcoal-soft)" }}>
+                Build your public presence and get found.
+              </p>
             </div>
 
             <ul className="space-y-2 flex-1 mb-6">
@@ -106,11 +125,9 @@ export default function PricingPage() {
               ))}
             </ul>
 
-            <a
-              href="/signup"
+            <a href="/signup"
               className="block text-center rounded-xl py-3 text-sm font-medium border transition"
-              style={{ borderColor: "var(--brand-line)", color: "var(--brand-charcoal)" }}
-            >
+              style={{ borderColor: "var(--brand-line)", color: "var(--brand-charcoal)" }}>
               Get started free
             </a>
           </div>
@@ -118,12 +135,15 @@ export default function PricingPage() {
           {/* PRO MONTHLY */}
           <div className="rounded-2xl border p-6 flex flex-col" style={{ borderColor: "var(--brand-line)" }}>
             <div className="mb-6">
-              <div className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--brand-charcoal-soft)" }}>Pro Monthly</div>
+              <div className="text-xs font-semibold uppercase tracking-wider mb-2"
+                style={{ color: "var(--brand-charcoal-soft)" }}>Pro Monthly</div>
               <div className="flex items-end gap-1">
-                <span className="text-4xl font-bold" style={{ color: "var(--brand-charcoal)" }}>$25</span>
+                <span className="text-4xl font-bold" style={{ color: "var(--brand-charcoal)" }}>$14.99</span>
                 <span className="text-sm mb-1" style={{ color: "var(--brand-charcoal-soft)" }}>/month</span>
               </div>
-              <p className="text-sm mt-2" style={{ color: "var(--brand-charcoal-soft)" }}>Full access. Cancel anytime.</p>
+              <p className="text-sm mt-2" style={{ color: "var(--brand-charcoal-soft)" }}>
+                Full access. Cancel anytime.
+              </p>
             </div>
 
             <ul className="space-y-2 flex-1 mb-6">
@@ -139,30 +159,32 @@ export default function PricingPage() {
               onClick={() => handleUpgrade("monthly")}
               disabled={loading !== null}
               className="rounded-xl py-3 text-sm font-medium border transition disabled:opacity-60"
-              style={{ borderColor: "var(--brand-green)", color: "var(--brand-green-dark)", background: "var(--brand-green-light)" }}
-            >
+              style={{ borderColor: "var(--brand-green)", color: "var(--brand-green-dark)", background: "var(--brand-green-light)" }}>
               {loading === "monthly" ? "Redirecting..." : "Upgrade to Pro"}
             </button>
           </div>
 
           {/* PRO ANNUAL */}
-          <div className="rounded-2xl p-6 flex flex-col relative" style={{ background: "var(--brand-green)", border: "2px solid var(--brand-green)" }}>
-            {/* Recommended badge */}
+          <div className="rounded-2xl p-6 flex flex-col relative"
+            style={{ background: "var(--brand-green)", border: "2px solid var(--brand-green)" }}>
             <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-              <span className="bg-white text-xs font-bold px-3 py-1 rounded-full shadow-sm" style={{ color: "var(--brand-green-dark)" }}>
+              <span className="bg-white text-xs font-bold px-3 py-1 rounded-full shadow-sm"
+                style={{ color: "var(--brand-green-dark)" }}>
                 BEST VALUE
               </span>
             </div>
 
             <div className="mb-6">
-              <div className="text-xs font-semibold uppercase tracking-wider mb-2 text-white opacity-80">Pro Annual</div>
+              <div className="text-xs font-semibold uppercase tracking-wider mb-2 text-white opacity-80">
+                Pro Annual
+              </div>
               <div className="flex items-end gap-1">
-                <span className="text-4xl font-bold text-white">$225</span>
+                <span className="text-4xl font-bold text-white">$99</span>
                 <span className="text-sm mb-1 text-white opacity-80">/year</span>
               </div>
               <div className="mt-2 space-y-0.5">
-                <p className="text-sm text-white font-medium">Save $75 per year</p>
-                <p className="text-sm text-white opacity-80">3 months free vs monthly</p>
+                <p className="text-sm text-white font-medium">Save $81 per year</p>
+                <p className="text-sm text-white opacity-80">Just $8.25/month — 2 months free</p>
               </div>
             </div>
 
@@ -179,8 +201,7 @@ export default function PricingPage() {
               onClick={() => handleUpgrade("annual")}
               disabled={loading !== null}
               className="rounded-xl py-3 text-sm font-bold transition disabled:opacity-60"
-              style={{ background: "#fff", color: "var(--brand-green-dark)" }}
-            >
+              style={{ background: "#fff", color: "var(--brand-green-dark)" }}>
               {loading === "annual" ? "Redirecting..." : "Get Pro Annual"}
             </button>
           </div>
@@ -192,7 +213,7 @@ export default function PricingPage() {
           Upgrade or cancel anytime from your dashboard settings.
         </p>
 
-        <div className="text-center mt-6">
+        <div className="text-center mt-4">
           <a href="/dashboard" className="text-sm underline" style={{ color: "var(--brand-charcoal-soft)" }}>
             Back to dashboard
           </a>
