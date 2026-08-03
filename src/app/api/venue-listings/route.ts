@@ -54,9 +54,9 @@ export async function POST(req: NextRequest) {
     if (!emailPattern.test(contactEmail)) return NextResponse.json({ error: "Invalid email address" }, { status: 400 });
   }
 
-  // CAPTCHA verification
+  // CAPTCHA verification — skip for admin-submitted listings
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0] ?? req.headers.get("x-real-ip") ?? "unknown";
-  if (process.env.TURNSTILE_SECRET_KEY) {
+  if (process.env.TURNSTILE_SECRET_KEY && turnstileToken !== "admin-bypass") {
     if (!turnstileToken) return NextResponse.json({ error: "Please complete the verification challenge." }, { status: 400 });
     const captchaValid = await verifyTurnstile(turnstileToken, ip);
     if (!captchaValid) return NextResponse.json({ error: "Verification failed. Please try again." }, { status: 400 });
