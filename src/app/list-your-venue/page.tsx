@@ -11,12 +11,17 @@ const VENUE_TYPES = [
   { value: "office", label: "Office park" },
   { value: "shopping", label: "Shopping center" },
   { value: "park", label: "Park / outdoor space" },
+  { value: "public_space", label: "Public space / street / parking lot" },
+  { value: "farmers_market", label: "Farmers market / festival grounds" },
   { value: "event_space", label: "Event space" },
   { value: "church", label: "Church / place of worship" },
   { value: "school", label: "School / university" },
   { value: "private", label: "Private property" },
   { value: "other", label: "Other" },
 ];
+
+// Venue types that are public spaces — skip email verification, go to admin approval instead
+const PUBLIC_SPACE_TYPES = ["park", "public_space", "farmers_market"];
 
 const TRAFFIC_OPTIONS = [
   { value: "low", label: "Low (under 50 people/day)" },
@@ -57,6 +62,7 @@ export default function ListYourVenuePage() {
   const [step, setStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [isPublicSpaceSubmit, setIsPublicSpaceSubmit] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Step 1 — Basic info
@@ -175,6 +181,7 @@ export default function ListYourVenuePage() {
       vendorFee: vendorFee || null, requiresPermit, requiresInsurance,
       contactName, contactEmail, contactPhone: contactPhone || null,
       turnstileToken,
+      isPublicSpace: PUBLIC_SPACE_TYPES.includes(venueType),
     };
 
     try {
@@ -184,6 +191,7 @@ export default function ListYourVenuePage() {
         body: JSON.stringify(payload),
       });
       if (!res.ok) { const d = await res.json(); throw new Error(d.error ?? "Submission failed."); }
+      setIsPublicSpaceSubmit(PUBLIC_SPACE_TYPES.includes(venueType));
       setSubmitted(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
@@ -199,14 +207,26 @@ export default function ListYourVenuePage() {
     <div className="min-h-screen flex items-center justify-center px-4 bg-white">
       <div className="text-center max-w-sm">
         <Logo variant="mark" size={48} className="mx-auto mb-6" />
-        <div className="text-4xl mb-4">📬</div>
-        <h1 className="text-xl font-medium mb-3">Check your email</h1>
-        <p className="text-sm mb-4" style={{ color: "var(--brand-charcoal-soft)" }}>
-          We sent a confirmation link to <strong>{contactEmail}</strong>. Click it to publish your listing on the VendorBeacon venue board.
-        </p>
-        <p className="text-xs mb-4" style={{ color: "var(--brand-charcoal-soft)" }}>
-          This extra step keeps the board free of spam and fake listings.
-        </p>
+        {isPublicSpaceSubmit ? (
+          <>
+            <div className="text-4xl mb-4">📍</div>
+            <h1 className="text-xl font-medium mb-3">Location submitted!</h1>
+            <p className="text-sm mb-4" style={{ color: "var(--brand-charcoal-soft)" }}>
+              Your public space listing has been submitted for review. We'll approve it shortly and it'll be live on the venue board.
+            </p>
+          </>
+        ) : (
+          <>
+            <div className="text-4xl mb-4">📬</div>
+            <h1 className="text-xl font-medium mb-3">Check your email</h1>
+            <p className="text-sm mb-4" style={{ color: "var(--brand-charcoal-soft)" }}>
+              We sent a confirmation link to <strong>{contactEmail}</strong>. Click it to publish your listing on the VendorBeacon venue board.
+            </p>
+            <p className="text-xs mb-4" style={{ color: "var(--brand-charcoal-soft)" }}>
+              This extra step keeps the board free of spam and fake listings.
+            </p>
+          </>
+        )}
         <p className="text-sm" style={{ color: "var(--brand-charcoal-soft)" }}>
           Are you a food truck operator?{" "}
           <a href="/signup" className="underline" style={{ color: "var(--brand-green-dark)" }}>Sign up free</a>

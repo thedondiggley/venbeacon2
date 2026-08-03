@@ -75,7 +75,14 @@ export default function AdminDashboard({ stats, vendors, venues, bookings, recen
           <h1 className="text-lg font-bold">VendorBeacon Admin</h1>
           <p className="text-xs" style={{ color: "#5F5E5A" }}>Platform management</p>
         </div>
-        <a href="/dashboard" className="text-sm underline" style={{ color: "#639922" }}>← Back to app</a>
+        <div className="flex items-center gap-3">
+          <a href="/admin/add-venue"
+            className="text-sm font-medium px-3 py-1.5 rounded-lg text-white"
+            style={{ background: "var(--brand-green)" }}>
+            + Add venue
+          </a>
+          <a href="/dashboard" className="text-sm underline" style={{ color: "#639922" }}>← Back to app</a>
+        </div>
       </div>
 
       {/* Stats */}

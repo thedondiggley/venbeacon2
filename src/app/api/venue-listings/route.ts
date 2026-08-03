@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { Resend } from "resend";
 
-const VENUE_TYPES = ["brewery","apartment","office","shopping","park","event_space","church","school","private","other"] as const;
+const VENUE_TYPES = ["brewery","apartment","office","shopping","park","public_space","farmers_market","event_space","church","school","private","other"] as const;
 
 function slugify(input: string): string {
   return input.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
@@ -33,18 +33,26 @@ export async function POST(req: NextRequest) {
     vendorFee, requiresPermit, requiresInsurance,
     websiteUrl, instagramUrl, facebookUrl,
     contactName, contactEmail, contactPhone,
-    turnstileToken,
+    turnstileToken, isPublicSpace,
   } = body;
 
-  const required = { venueName, venueType, address, city, daysAvailable, hoursAvailable, description, contactName, contactEmail };
+  const PUBLIC_SPACE_TYPES = ["park", "public_space", "farmers_market"];
+  const skipVerification = isPublicSpace || PUBLIC_SPACE_TYPES.includes(venueType);
+
+  const required = skipVerification
+    ? { venueName, venueType, address, city, daysAvailable, hoursAvailable, description }
+    : { venueName, venueType, address, city, daysAvailable, hoursAvailable, description, contactName, contactEmail };
+
   for (const [key, value] of Object.entries(required)) {
     if (!value?.toString().trim()) return NextResponse.json({ error: `Missing required field: ${key}` }, { status: 400 });
   }
 
   if (!VENUE_TYPES.includes(venueType)) return NextResponse.json({ error: "Invalid venue type" }, { status: 400 });
 
-  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailPattern.test(contactEmail)) return NextResponse.json({ error: "Invalid email address" }, { status: 400 });
+  if (!skipVerification && contactEmail) {
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailPattern.test(contactEmail)) return NextResponse.json({ error: "Invalid email address" }, { status: 400 });
+  }
 
   // CAPTCHA verification
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0] ?? req.headers.get("x-real-ip") ?? "unknown";
@@ -72,6 +80,9 @@ export async function POST(req: NextRequest) {
 
   // Listing is created but NOT published until email is verified.
   // edit_token_expires_at set 90 days out from creation.
+  // Public spaces (parks, streets, public lots) skip email verification
+  // and go straight to admin approval queue instead
+
   const { data: listing, error } = await supabase.from("venue_listings").insert({
     venue_name: venueName, venue_type: venueType, address, city,
     zip_code: zipCode || null,
@@ -89,12 +100,13 @@ export async function POST(req: NextRequest) {
     website_url: websiteUrl || null,
     instagram_url: instagramUrl || null,
     facebook_url: facebookUrl || null,
-    contact_name: contactName, contact_email: contactEmail,
+    contact_name: contactName, contact_email: contactEmail || null,
     contact_phone: contactPhone || null,
     slug,
-    is_published: false,       // stays unpublished until verified
-    email_verified: false,
-    verification_sent_at: new Date().toISOString(),
+    is_published: false,
+    email_verified: skipVerification,  // public spaces auto-verified, go to admin approval
+    is_approved: false,                 // always needs admin approval before going live
+    verification_sent_at: skipVerification ? null : new Date().toISOString(),
     edit_token_expires_at: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
   }).select().single();
 
@@ -102,7 +114,7 @@ export async function POST(req: NextRequest) {
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://vendorbeacon.app";
 
-  if (process.env.RESEND_API_KEY && contactEmail) {
+  if (process.env.RESEND_API_KEY && contactEmail && !skipVerification) {
     try {
       const resend = new Resend(process.env.RESEND_API_KEY);
       const verifyUrl = `${appUrl}/api/venue-listings/verify?token=${listing.verification_token}`;
