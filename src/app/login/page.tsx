@@ -39,7 +39,7 @@ function LoginForm() {
   return (
     <div className="w-full max-w-sm">
       <div className="flex justify-center mb-8">
-        <Logo variant="full" size={40} />
+        <a href="/"><Logo variant="full" size={40} /></a>
       </div>
 
       <h1 className="text-xl font-medium text-center mb-1">Log in</h1>

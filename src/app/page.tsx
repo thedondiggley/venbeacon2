@@ -16,8 +16,25 @@ export default function Home() {
         <p className="text-lg max-w-xl mx-auto mb-8" style={{ color: "var(--brand-charcoal-soft)" }}>
           Manage your schedule, discover venues looking for food trucks, and accept booking requests — all from one platform.
         </p>
+
+        {/* Early adopter banner */}
+        <div className="max-w-lg mx-auto mb-8 rounded-2xl border p-5"
+          style={{ background: "var(--brand-green-light)", borderColor: "#a8cf72" }}>
+          <div className="text-base font-bold mb-1" style={{ color: "var(--brand-green-dark)" }}>
+            🎁 Founding Vendor Offer — Limited Spots
+          </div>
+          <p className="text-sm mb-3" style={{ color: "var(--brand-green-dark)", opacity: 0.9 }}>
+            Sign up now and I'll personally reach out with a promo code for months of Pro access free. First vendors only.
+          </p>
+          <a href="/signup?early=1"
+            className="inline-block rounded-xl px-5 py-2 text-sm font-bold text-white"
+            style={{ background: "var(--brand-green)" }}>
+            Claim your founding spot →
+          </a>
+        </div>
+
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <a href="/signup" className="rounded-xl px-6 py-3 text-base font-semibold text-white" style={{ background: "var(--brand-green)" }}>
+          <a href="/pricing" className="rounded-xl px-6 py-3 text-base font-semibold text-white" style={{ background: "var(--brand-green)" }}>
             Get started free
           </a>
           <a href="/login" className="rounded-xl px-6 py-3 text-base font-semibold border" style={{ borderColor: "var(--brand-line)", color: "var(--brand-charcoal)" }}>
@@ -25,7 +42,7 @@ export default function Home() {
           </a>
         </div>
         <p className="mt-4 text-sm" style={{ color: "var(--brand-charcoal-soft)" }}>
-          <a href="/pricing" className="underline" style={{ color: "var(--brand-green-dark)" }}>View pricing</a> — free to start, Pro from $25/month
+          <a href="/pricing" className="underline" style={{ color: "var(--brand-green-dark)" }}>View pricing</a> — free to start, Pro from $14.99/month
         </p>
       </div>
 
@@ -59,7 +76,7 @@ export default function Home() {
       {/* CTA split */}
       <div className="border-t" style={{ borderColor: "var(--brand-line)" }}>
         <div className="max-w-4xl mx-auto px-4 py-16 grid grid-cols-1 sm:grid-cols-2 gap-6">
-          <div className="rounded-xl p-6 cursor-pointer" style={{ background: "var(--brand-green)" }} onClick={() => window.location.href = "/signup"}>
+          <div className="rounded-xl p-6 cursor-pointer" style={{ background: "var(--brand-green)" }} onClick={() => window.location.href = "/signup?early=1"}>
             <div className="text-2xl mb-3">🚚</div>
             <h3 className="text-lg font-bold text-white mb-2">I'm a food truck or vendor</h3>
             <p className="text-sm text-white opacity-90 mb-4">Set up your public page, manage your schedule, and start finding new locations.</p>
@@ -95,5 +112,3 @@ export default function Home() {
     </div>
   );
 }
-
-// Add footer — this is appended to the existing page

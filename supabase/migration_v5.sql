@@ -56,3 +56,7 @@ alter table public.analytics_events add constraint analytics_events_event_type_c
 create policy "Vendors can insert own analytics events"
   on public.analytics_events for insert
   with check (vendor_id in (select id from public.vendors where user_id = auth.uid()));
+
+-- Early adopter flag for vendors
+alter table public.vendors
+  add column if not exists is_early_adopter boolean not null default false;

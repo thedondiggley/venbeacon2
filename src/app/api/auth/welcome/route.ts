@@ -4,7 +4,7 @@ import { Resend } from "resend";
 
 export async function POST(req: NextRequest) {
   try {
-    const { userId } = await req.json();
+    const { userId, isEarlyAdopter } = await req.json();
     if (!userId) return NextResponse.json({ error: "Missing userId" }, { status: 400 });
 
     const supabase = createServiceClient();
@@ -27,8 +27,8 @@ export async function POST(req: NextRequest) {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://vendorbeacon.app";
     const publicUrl = `${appUrl}/t/${vendor.slug}`;
     const dashboardUrl = `${appUrl}/dashboard`;
+    const pricingUrl = `${appUrl}/pricing`;
 
-    // Send welcome email to new vendor
     await resend.emails.send({
       from: process.env.BOOKING_NOTIFICATION_FROM_EMAIL ?? "VendorBeacon <notifications@vendorbeacon.app>",
       to: vendor.contact_email,
@@ -44,21 +44,40 @@ export async function POST(req: NextRequest) {
   <div style="padding:40px">
     <h1 style="font-size:22px;font-weight:700;color:#2C2C2A;margin:0 0 8px">Welcome, ${vendor.business_name}! 👋</h1>
     <p style="font-size:15px;color:#5F5E5A;margin:0 0 24px;line-height:1.6">Your account is live. Here's everything you need to get started.</p>
-    <div style="background:#EAF3DE;border-radius:10px;padding:20px;margin-bottom:24px">
+
+    ${isEarlyAdopter ? `
+    <!-- Early adopter promo banner -->
+    <div style="background:#EAF3DE;border:1.5px solid #a8cf72;border-radius:10px;padding:18px 20px;margin-bottom:24px;text-align:center">
+      <div style="font-size:13px;font-weight:700;color:#3B6D11;margin-bottom:6px">🎁 Early Adopter Offer</div>
+      <p style="font-size:13px;color:#3B6D11;margin:0 0 12px;line-height:1.5">As one of our first vendors, you're eligible for an exclusive promo code giving you months of Pro access free. I'll be reaching out to you personally with your code — keep an eye out.</p>
+      <a href="${pricingUrl}" style="display:inline-block;background:#639922;color:#fff;text-decoration:none;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600">View Pro plans</a>
+    </div>` : ""}
+
+    <!-- Public page -->
+    <div style="background:#f8f8f6;border-radius:10px;padding:20px;margin-bottom:24px">
       <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#3B6D11;margin-bottom:6px">Your public page is live</div>
       <div style="font-size:15px;font-weight:600;color:#2C2C2A;margin-bottom:12px">Share this link everywhere 👇</div>
       <a href="${publicUrl}" style="display:block;background:#639922;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px;font-size:14px;font-weight:600;text-align:center">${publicUrl}</a>
-      <p style="font-size:12px;color:#3B6D11;margin:10px 0 0;text-align:center">Put this in your Instagram bio, Facebook page, TikTok bio, and Google Business Profile</p>
+      <p style="font-size:12px;color:#5F5E5A;margin:10px 0 0;text-align:center">Put this in your Instagram bio, Facebook page, TikTok bio, and Google Business Profile</p>
     </div>
+
+    <!-- Steps -->
     <div style="margin-bottom:28px">
       <div style="font-size:14px;font-weight:600;color:#2C2C2A;margin-bottom:14px">Get the most out of VendorBeacon:</div>
       <table width="100%" cellpadding="0" cellspacing="0">
         <tr><td width="36" valign="top"><div style="background:#639922;color:#fff;border-radius:50%;width:24px;height:24px;font-size:12px;font-weight:700;text-align:center;line-height:24px">1</div></td><td style="padding-bottom:12px"><div style="font-size:13px;font-weight:600;color:#2C2C2A">Add your weekly schedule</div><div style="font-size:12px;color:#5F5E5A">Go to your dashboard and add where you'll be this week. It shows on your public page instantly.</div></td></tr>
-        <tr><td width="36" valign="top"><div style="background:#639922;color:#fff;border-radius:50%;width:24px;height:24px;font-size:12px;font-weight:700;text-align:center;line-height:24px">2</div></td><td style="padding-bottom:12px"><div style="font-size:13px;font-weight:600;color:#2C2C2A">Complete your profile</div><div style="font-size:12px;color:#5F5E5A">Add your logo, description, phone number, and social links in Settings.</div></td></tr>
+        <tr><td width="36" valign="top"><div style="background:#639922;color:#fff;border-radius:50%;width:24px;height:24px;font-size:12px;font-weight:700;text-align:center;line-height:24px">2</div></td><td style="padding-bottom:12px"><div style="font-size:13px;font-weight:600;color:#2C2C2A">Complete your profile</div><div style="font-size:12px;color:#5F5E5A">Add your logo, description, public phone number, and social links in Settings.</div></td></tr>
         <tr><td width="36" valign="top"><div style="background:#639922;color:#fff;border-radius:50%;width:24px;height:24px;font-size:12px;font-weight:700;text-align:center;line-height:24px">3</div></td><td style="padding-bottom:12px"><div style="font-size:13px;font-weight:600;color:#2C2C2A">Share your link everywhere</div><div style="font-size:12px;color:#5F5E5A">Instagram bio, Facebook page, TikTok bio, Google Business Profile — one link covers all of them.</div></td></tr>
-        <tr><td width="36" valign="top"><div style="background:#EAF3DE;color:#639922;border-radius:50%;width:24px;height:24px;font-size:12px;font-weight:700;text-align:center;line-height:24px">4</div></td><td><div style="font-size:13px;font-weight:600;color:#2C2C2A">Upgrade to Pro to find new venues</div><div style="font-size:12px;color:#5F5E5A">Browse local breweries, apartments, and office parks looking for food trucks. Accept booking requests. From $25/month.</div></td></tr>
+        <tr><td width="36" valign="top"><div style="background:#EAF3DE;color:#639922;border-radius:50%;width:24px;height:24px;font-size:12px;font-weight:700;text-align:center;line-height:24px">4</div></td><td><div style="font-size:13px;font-weight:600;color:#2C2C2A">Upgrade to Pro to find new venues</div><div style="font-size:12px;color:#5F5E5A">Browse local breweries, apartments, and office parks looking for food trucks. Accept booking requests directly. From $14.99/month${isEarlyAdopter ? " — or use your early adopter code for an even better deal." : "."}</div></td></tr>
       </table>
     </div>
+
+    <!-- Referral mention -->
+    <div style="border:1px solid #D3D1C7;border-radius:10px;padding:16px;margin-bottom:24px">
+      <div style="font-size:13px;font-weight:600;color:#2C2C2A;margin-bottom:4px">🔗 Refer other food trucks, earn free months</div>
+      <div style="font-size:12px;color:#5F5E5A;line-height:1.5">Once you're set up, head to Settings to grab your referral link. Every food truck operator you refer who upgrades to Pro earns you a free month automatically.</div>
+    </div>
+
     <a href="${dashboardUrl}" style="display:block;background:#2C2C2A;color:#fff;text-decoration:none;padding:14px 20px;border-radius:10px;font-size:14px;font-weight:600;text-align:center;margin-bottom:24px">Go to your dashboard →</a>
     <p style="font-size:13px;color:#5F5E5A;line-height:1.6;margin:0">Questions? Reply to this email and we'll help you get set up.</p>
   </div>
@@ -88,7 +107,8 @@ export async function POST(req: NextRequest) {
               <tr><td style="padding:8px 0;color:#5F5E5A;font-size:13px;border-bottom:1px solid #D3D1C7">Email</td><td style="padding:8px 0;font-size:13px;text-align:right;border-bottom:1px solid #D3D1C7">${vendor.contact_email}</td></tr>
               <tr><td style="padding:8px 0;color:#5F5E5A;font-size:13px">Public page</td><td style="padding:8px 0;font-size:13px;text-align:right"><a href="${publicUrl}" style="color:#639922">${publicUrl}</a></td></tr>
             </table>
-            <a href="${appUrl}" style="display:block;margin-top:24px;background:#2C2C2A;color:#fff;text-decoration:none;padding:12px;border-radius:8px;text-align:center;font-size:13px;font-weight:600">View vendorbeacon.app →</a>
+            <p style="font-size:12px;color:#5F5E5A;margin-top:16px">${isEarlyAdopter ? "⭐ Early adopter signup — remember to reach out with their promo code!" : "Regular signup."}</p>
+            <a href="${appUrl}/admin" style="display:block;margin-top:16px;background:#2C2C2A;color:#fff;text-decoration:none;padding:12px;border-radius:8px;text-align:center;font-size:13px;font-weight:600">View in admin dashboard →</a>
           </div>
         `,
       }).catch(() => {});

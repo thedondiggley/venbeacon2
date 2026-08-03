@@ -20,6 +20,7 @@ function SignupForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const refCode = searchParams.get("ref");
+  const isEarlyAdopter = searchParams.get("early") === "1";
   const [businessName, setBusinessName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -74,6 +75,7 @@ function SignupForm() {
         business_name: businessName,
         contact_email: email,
         referred_by: referredBy,
+        is_early_adopter: isEarlyAdopter,
       }).select("id").single();
 
       if (!insertError) {
@@ -101,7 +103,7 @@ function SignupForm() {
       await fetch("/api/auth/welcome", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId }),
+        body: JSON.stringify({ userId, isEarlyAdopter }),
       });
     } catch {
       // Don't block signup if email fails
@@ -114,7 +116,7 @@ function SignupForm() {
   return (
     <div className="w-full max-w-sm">
       <div className="flex justify-center mb-8">
-        <Logo variant="full" size={40} />
+        <a href="/"><Logo variant="full" size={40} /></a>
       </div>
 
       <h1 className="text-xl font-medium text-center mb-1">Create your account</h1>
