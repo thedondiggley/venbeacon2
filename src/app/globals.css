@@ -2,15 +2,21 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #2C2C2A;
+  --foreground: #1A1A1A;
 
-  /* VendorBeacon brand */
-  --brand-green: #639922;
-  --brand-green-dark: #3B6D11;
-  --brand-green-light: #EAF3DE;
-  --brand-charcoal: #2C2C2A;
-  --brand-charcoal-soft: #5F5E5A;
-  --brand-line: #D3D1C7;
+  /* VendorBeacon brand — new palette */
+  --brand-green: #39FF14;
+  --brand-green-dark: #0A5A0A;
+  --brand-green-darker: #0A2A0A;
+  --brand-green-light: #F0FFF0;
+  --brand-green-mid: #1A7A1A;
+  --brand-dark: #1A1A1A;
+  --brand-dark-surface: #242424;
+  --brand-charcoal: #1A1A1A;
+  --brand-charcoal-soft: #555555;
+  --brand-line: #E8E8E8;
+  --brand-line-dark: #2A2A2A;
+  --brand-surface: #F8FFF8;
 }
 
 @theme inline {

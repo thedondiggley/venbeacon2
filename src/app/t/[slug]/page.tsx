@@ -200,10 +200,20 @@ export default async function VendorPage({ params }: PageProps) {
           )}
         </div>
 
-        <footer className="mt-12 text-center">
-          <p className="text-xs" style={{ color: "var(--brand-charcoal-soft)" }}>
-            Powered by VendorBeacon
-          </p>
+        <footer className="mt-12">
+          <div className="rounded-2xl p-5 text-center" style={{ background: "#1A1A1A" }}>
+            <div className="text-sm font-semibold mb-1" style={{ color: "#fff" }}>
+              Are you a food truck operator?
+            </div>
+            <div className="text-xs mb-4" style={{ color: "#888" }}>
+              Get your own public page, manage your schedule, and start getting booked at local venues.
+            </div>
+            <a href="/signup"
+              className="inline-block text-sm font-semibold px-6 py-2.5 rounded-xl"
+              style={{ background: "var(--brand-green)", color: "var(--brand-green-darker)" }}>
+              Sign up free on VendorBeacon →
+            </a>
+          </div>
         </footer>
       </div>
     </div>

@@ -7,7 +7,6 @@ export default async function DashboardHome() {
   const vendor = await getCurrentVendor();
   const supabase = await createClient();
 
-  // Upcoming stops
   const { data: locations } = await supabase
     .from("locations")
     .select("id, title, start_time, end_time, address")
@@ -16,7 +15,6 @@ export default async function DashboardHome() {
     .order("start_time", { ascending: true })
     .limit(3);
 
-  // Pending bookings (Pro only)
   let pendingCount = 0;
   let recentBookings: { id: string; venue_name: string; event_date: string }[] = [];
   if (vendor.is_pro) {
@@ -37,7 +35,6 @@ export default async function DashboardHome() {
     recentBookings = recent ?? [];
   }
 
-  // Profile completion
   const profileFields = [
     vendor.description,
     vendor.contact_phone,
@@ -46,235 +43,184 @@ export default async function DashboardHome() {
   ];
   const completedFields = profileFields.filter(Boolean).length;
   const profilePercent = Math.round((completedFields / profileFields.length) * 100);
-  const isProfileComplete = profilePercent === 100;
 
   function formatDate(d: string) {
-    return new Date(d + "T12:00:00").toLocaleDateString(undefined, {
-      weekday: "short", month: "short", day: "numeric"
-    });
+    return new Date(d + "T12:00:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
   }
-
   function formatTime(t: string) {
-    const d = new Date(t);
-    return d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+    return new Date(t).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
   }
-
-  const isNewAccount = !vendor.description && !vendor.contact_phone && !vendor.instagram_url;
 
   return (
-    <div className="space-y-6">
-      {/* Welcome banner for new accounts */}
-      {isNewAccount && (
-        <div className="rounded-xl border p-5" style={{ background: "var(--brand-green-light)", borderColor: "#a8cf72" }}>
-          <p className="text-sm font-semibold mb-1" style={{ color: "var(--brand-green-dark)" }}>
-            Welcome to VendorBeacon! 👋
-          </p>
-          <p className="text-sm mb-3" style={{ color: "var(--brand-green-dark)", opacity: 0.9 }}>
-            Your public page is live. Complete your profile and add your first stop to get started.
-          </p>
-          <div className="flex gap-2 flex-wrap">
-            <Link href="/dashboard/schedule"
-              className="text-xs font-semibold px-3 py-1.5 rounded-lg text-white"
-              style={{ background: "var(--brand-green)" }}>
-              Add a stop
-            </Link>
-            <Link href="/dashboard/settings"
-              className="text-xs font-semibold px-3 py-1.5 rounded-lg border"
-              style={{ borderColor: "var(--brand-green)", color: "var(--brand-green-dark)", background: "#fff" }}>
-              Complete profile
-            </Link>
-          </div>
-        </div>
-      )}
+    <div className="space-y-4">
 
-      {/* Pending bookings alert */}
-      {vendor.is_pro && pendingCount > 0 && (
-        <Link href="/dashboard/bookings"
-          className="block rounded-xl border p-4 hover:bg-gray-50 transition"
-          style={{ borderColor: "#a8cf72", background: "var(--brand-green-light)" }}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="text-xl">📥</span>
-              <div>
-                <p className="text-sm font-semibold" style={{ color: "var(--brand-green-dark)" }}>
-                  {pendingCount} pending booking {pendingCount === 1 ? "request" : "requests"}
-                </p>
-                <p className="text-xs mt-0.5" style={{ color: "var(--brand-green-dark)", opacity: 0.8 }}>
-                  Tap to review and respond
-                </p>
-              </div>
-            </div>
-            <span style={{ color: "var(--brand-green-dark)", fontSize: "18px" }}>›</span>
+      {/* Welcome + stats row */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {/* Public page card */}
+        <div className="sm:col-span-2 rounded-2xl p-5" style={{ background: "var(--brand-green)" }}>
+          <div className="text-xs font-semibold mb-1" style={{ color: "var(--brand-green-dark)" }}>
+            YOUR PUBLIC PAGE IS LIVE
           </div>
-        </Link>
-      )}
+          <div className="text-base font-semibold mb-3" style={{ color: "var(--brand-green-darker)" }}>
+            Share this link everywhere 👇
+          </div>
+          <div className="rounded-xl px-4 py-3 font-mono text-sm mb-3" style={{ background: "var(--brand-green-darker)", color: "var(--brand-green)" }}>
+            vendorbeacon.app/t/{vendor.slug}
+          </div>
+          <div className="flex gap-2">
+            <a href={`/t/${vendor.slug}`} target="_blank" rel="noopener noreferrer"
+              className="text-xs font-semibold px-4 py-2 rounded-lg"
+              style={{ background: "var(--brand-green-darker)", color: "var(--brand-green)" }}>
+              View page ↗
+            </a>
+          </div>
+        </div>
 
-      {/* Stats row */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="rounded-xl border p-4 text-center" style={{ borderColor: "var(--brand-line)" }}>
-          <div className="text-2xl font-bold mb-1" style={{ color: "var(--brand-green)" }}>
-            {locations?.length ?? 0}
-          </div>
-          <div className="text-xs" style={{ color: "var(--brand-charcoal-soft)" }}>Upcoming stops</div>
-        </div>
-        <div className="rounded-xl border p-4 text-center" style={{ borderColor: "var(--brand-line)" }}>
-          <div className="text-2xl font-bold mb-1" style={{ color: vendor.is_pro ? "var(--brand-green)" : "var(--brand-charcoal-soft)" }}>
-            {vendor.is_pro ? pendingCount : "—"}
-          </div>
-          <div className="text-xs" style={{ color: "var(--brand-charcoal-soft)" }}>Pending bookings</div>
-        </div>
-        <div className="rounded-xl border p-4 text-center" style={{ borderColor: "var(--brand-line)" }}>
-          <div className="text-2xl font-bold mb-1" style={{ color: "var(--brand-green)" }}>
-            {profilePercent}%
-          </div>
-          <div className="text-xs" style={{ color: "var(--brand-charcoal-soft)" }}>Profile complete</div>
-        </div>
-        <div className="rounded-xl border p-4 text-center" style={{ borderColor: "var(--brand-line)" }}>
-          <div className="text-2xl font-bold mb-1" style={{ color: vendor.is_pro ? "var(--brand-green)" : "var(--brand-charcoal-soft)" }}>
-            {vendor.is_pro ? "Pro" : "Free"}
-          </div>
-          <div className="text-xs" style={{ color: "var(--brand-charcoal-soft)" }}>Current plan</div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {/* Upcoming stops */}
-        <div className="rounded-xl border p-4" style={{ borderColor: "var(--brand-line)" }}>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold">Upcoming stops</h2>
-            <Link href="/dashboard/schedule" className="text-xs underline"
-              style={{ color: "var(--brand-green-dark)" }}>
-              Manage
+        {/* Stats */}
+        <div className="flex flex-col gap-3">
+          <div className="rounded-2xl p-4 flex-1" style={{ background: "#fff", border: "0.5px solid var(--brand-line)" }}>
+            <div className="text-xs mb-1" style={{ color: "var(--brand-charcoal-soft)" }}>Upcoming stops</div>
+            <div className="text-3xl font-semibold" style={{ color: "var(--brand-charcoal)" }}>{locations?.length ?? 0}</div>
+            <Link href="/dashboard/schedule" className="text-xs font-medium mt-1 block" style={{ color: "var(--brand-green-mid)" }}>
+              Manage schedule →
             </Link>
           </div>
-          {!locations || locations.length === 0 ? (
-            <div className="text-center py-4">
-              <p className="text-sm mb-2" style={{ color: "var(--brand-charcoal-soft)" }}>No upcoming stops.</p>
-              <Link href="/dashboard/schedule"
-                className="text-xs font-medium underline" style={{ color: "var(--brand-green-dark)" }}>
-                Add your first stop →
+          {vendor.is_pro ? (
+            <div className="rounded-2xl p-4 flex-1" style={{ background: pendingCount > 0 ? "#1A1A1A" : "#fff", border: `0.5px solid ${pendingCount > 0 ? "var(--brand-green)" : "var(--brand-line)"}` }}>
+              <div className="text-xs mb-1" style={{ color: pendingCount > 0 ? "#888" : "var(--brand-charcoal-soft)" }}>Pending bookings</div>
+              <div className="text-3xl font-semibold" style={{ color: pendingCount > 0 ? "var(--brand-green)" : "var(--brand-charcoal)" }}>{pendingCount}</div>
+              <Link href="/dashboard/bookings" className="text-xs font-medium mt-1 block" style={{ color: pendingCount > 0 ? "var(--brand-green)" : "var(--brand-green-mid)" }}>
+                {pendingCount > 0 ? "Review now →" : "View bookings →"}
               </Link>
             </div>
           ) : (
-            <div className="space-y-2">
-              {locations.map(loc => {
-                const isToday = new Date(loc.start_time).toDateString() === new Date().toDateString();
-                return (
-                  <div key={loc.id} className="flex items-start gap-3 py-2 border-b last:border-0"
-                    style={{ borderColor: "var(--brand-line)" }}>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium truncate">{loc.title}</p>
-                        {isToday && (
-                          <span className="text-xs px-1.5 py-0.5 rounded-full text-white shrink-0"
-                            style={{ background: "var(--brand-green)", fontSize: "10px" }}>
-                            Today
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-xs mt-0.5" style={{ color: "var(--brand-charcoal-soft)" }}>
-                        {formatTime(loc.start_time)} – {formatTime(loc.end_time)}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
+            <div className="rounded-2xl p-4 flex-1" style={{ background: "#1A1A1A" }}>
+              <div className="text-xs mb-1" style={{ color: "#888" }}>Plan</div>
+              <div className="text-base font-semibold" style={{ color: "#fff" }}>Free</div>
+              <Link href="/pricing" className="text-xs font-semibold mt-2 block px-3 py-1.5 rounded-lg text-center" style={{ background: "var(--brand-green)", color: "var(--brand-green-darker)" }}>
+                Upgrade to Pro
+              </Link>
             </div>
-          )}
-        </div>
-
-        {/* Pending bookings or upgrade prompt */}
-        <div className="rounded-xl border p-4" style={{ borderColor: "var(--brand-line)" }}>
-          {vendor.is_pro ? (
-            <>
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-sm font-semibold">Recent booking requests</h2>
-                <Link href="/dashboard/bookings" className="text-xs underline"
-                  style={{ color: "var(--brand-green-dark)" }}>
-                  View all
-                </Link>
-              </div>
-              {recentBookings.length === 0 ? (
-                <div className="text-center py-4">
-                  <p className="text-sm" style={{ color: "var(--brand-charcoal-soft)" }}>
-                    No pending requests.
-                  </p>
-                  <p className="text-xs mt-1" style={{ color: "var(--brand-charcoal-soft)" }}>
-                    Share your public page link to start receiving requests.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {recentBookings.map(b => (
-                    <Link key={b.id} href="/dashboard/bookings"
-                      className="flex items-center justify-between py-2 border-b last:border-0 hover:opacity-75 transition"
-                      style={{ borderColor: "var(--brand-line)" }}>
-                      <div>
-                        <p className="text-sm font-medium">{b.venue_name}</p>
-                        <p className="text-xs mt-0.5" style={{ color: "var(--brand-charcoal-soft)" }}>
-                          {formatDate(b.event_date)}
-                        </p>
-                      </div>
-                      <span className="text-xs px-2 py-0.5 rounded-full font-medium"
-                        style={{ background: "#FEF9C3", color: "#854D0E" }}>
-                        Pending
-                      </span>
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </>
-          ) : (
-            <>
-              <h2 className="text-sm font-semibold mb-3">Grow your business</h2>
-              <div className="space-y-3">
-                <div className="flex items-start gap-3">
-                  <span className="text-lg">🏢</span>
-                  <div>
-                    <p className="text-sm font-medium">Discover venues</p>
-                    <p className="text-xs" style={{ color: "var(--brand-charcoal-soft)" }}>
-                      Browse local spots actively looking for food trucks.
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <span className="text-lg">📥</span>
-                  <div>
-                    <p className="text-sm font-medium">Accept booking requests</p>
-                    <p className="text-xs" style={{ color: "var(--brand-charcoal-soft)" }}>
-                      Let venues book you directly through your public page.
-                    </p>
-                  </div>
-                </div>
-                <Link href="/pricing"
-                  className="block text-center rounded-lg py-2 text-sm font-medium text-white mt-2"
-                  style={{ background: "var(--brand-green)" }}>
-                  Upgrade to Pro
-                </Link>
-              </div>
-            </>
           )}
         </div>
       </div>
 
-      {/* Profile completion */}
-      {!isProfileComplete && (
-        <div className="rounded-xl border p-4" style={{ borderColor: "var(--brand-line)" }}>
+      {/* Pending bookings alert */}
+      {vendor.is_pro && pendingCount > 0 && (
+        <div className="rounded-2xl p-5" style={{ background: "#1A1A1A" }}>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold">Complete your profile</h2>
-            <Link href="/dashboard/settings" className="text-xs underline"
-              style={{ color: "var(--brand-green-dark)" }}>
-              Go to settings
+            <div>
+              <div className="text-sm font-semibold" style={{ color: "#fff" }}>
+                {pendingCount} booking {pendingCount === 1 ? "request" : "requests"} waiting
+              </div>
+              <div className="text-xs mt-0.5" style={{ color: "#888" }}>Venues are waiting to hear back from you</div>
+            </div>
+            <Link href="/dashboard/bookings"
+              className="text-xs font-semibold px-4 py-2 rounded-lg"
+              style={{ background: "var(--brand-green)", color: "var(--brand-green-darker)" }}>
+              Review now
             </Link>
           </div>
-          <div className="flex items-center gap-3 mb-3">
-            <div className="flex-1 h-2 rounded-full" style={{ background: "var(--brand-line)" }}>
-              <div className="h-2 rounded-full transition-all"
-                style={{ width: `${profilePercent}%`, background: "var(--brand-green)" }} />
+          <div className="space-y-2">
+            {recentBookings.map(b => (
+              <Link key={b.id} href="/dashboard/bookings"
+                className="flex items-center justify-between rounded-xl px-4 py-3"
+                style={{ background: "#242424" }}>
+                <div>
+                  <div className="text-sm font-medium" style={{ color: "#fff" }}>{b.venue_name}</div>
+                  <div className="text-xs mt-0.5" style={{ color: "#888" }}>{formatDate(b.event_date)}</div>
+                </div>
+                <span className="text-xs px-2 py-1 rounded-full font-semibold"
+                  style={{ background: "var(--brand-green)", color: "var(--brand-green-darker)" }}>
+                  Pending
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Upcoming stops */}
+      <div className="rounded-2xl p-5" style={{ background: "#fff", border: "0.5px solid var(--brand-line)" }}>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm font-semibold" style={{ color: "var(--brand-charcoal)" }}>Upcoming stops</h2>
+          <Link href="/dashboard/schedule" className="text-xs font-medium" style={{ color: "var(--brand-green-mid)" }}>
+            Manage →
+          </Link>
+        </div>
+        {!locations || locations.length === 0 ? (
+          <div className="text-center py-6">
+            <div className="text-2xl mb-2">📍</div>
+            <p className="text-sm font-medium mb-1" style={{ color: "var(--brand-charcoal)" }}>No upcoming stops</p>
+            <p className="text-xs mb-4" style={{ color: "var(--brand-charcoal-soft)" }}>Add your schedule so customers know where to find you</p>
+            <Link href="/dashboard/schedule"
+              className="inline-block text-xs font-semibold px-4 py-2 rounded-lg"
+              style={{ background: "var(--brand-green)", color: "var(--brand-green-darker)" }}>
+              Add your first stop →
+            </Link>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {locations.map((loc, i) => (
+              <div key={loc.id} className="flex items-center gap-3 rounded-xl p-3"
+                style={{ background: i === 0 ? "var(--brand-green-light)" : "var(--brand-surface)", border: `0.5px solid ${i === 0 ? "var(--brand-green)" : "var(--brand-line)"}` }}>
+                <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: i === 0 ? "var(--brand-green)" : "var(--brand-line)" }} />
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium truncate" style={{ color: "var(--brand-charcoal)" }}>{loc.title}</div>
+                  <div className="text-xs mt-0.5" style={{ color: "var(--brand-charcoal-soft)" }}>
+                    {formatDate(loc.start_time)} · {formatTime(loc.start_time)} – {formatTime(loc.end_time)}
+                  </div>
+                </div>
+                {i === 0 && <span className="text-xs px-2 py-0.5 rounded-full font-semibold" style={{ background: "var(--brand-green)", color: "var(--brand-green-darker)" }}>Next up</span>}
+              </div>
+            ))}
+            <Link href="/dashboard/schedule"
+              className="block text-center text-xs font-medium mt-2 py-2 rounded-xl"
+              style={{ background: "var(--brand-surface)", color: "var(--brand-green-mid)", border: "0.5px solid var(--brand-line)" }}>
+              View full schedule →
+            </Link>
+          </div>
+        )}
+      </div>
+
+      {/* Pro upgrade banner — free vendors only */}
+      {!vendor.is_pro && (
+        <div className="rounded-2xl p-5" style={{ background: "#1A1A1A" }}>
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1">
+              <div className="text-sm font-semibold mb-1" style={{ color: "#fff" }}>Unlock the venue board</div>
+              <div className="text-xs mb-3" style={{ color: "#888" }}>Browse local breweries, apartment communities, and event spaces actively looking for food trucks. Accept booking requests directly.</div>
+              <div className="flex gap-2 flex-wrap">
+                <Link href="/pricing"
+                  className="text-xs font-semibold px-4 py-2 rounded-lg"
+                  style={{ background: "var(--brand-green)", color: "var(--brand-green-darker)" }}>
+                  Upgrade to Pro — $14.99/mo
+                </Link>
+                <Link href="/pricing"
+                  className="text-xs font-medium px-4 py-2 rounded-lg"
+                  style={{ background: "#2A2A2A", color: "#888" }}>
+                  View all plans
+                </Link>
+              </div>
             </div>
-            <span className="text-xs font-medium" style={{ color: "var(--brand-charcoal-soft)" }}>
-              {profilePercent}%
-            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Profile completion */}
+      {profilePercent < 100 && (
+        <div className="rounded-2xl p-5" style={{ background: "#fff", border: "0.5px solid var(--brand-line)" }}>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold" style={{ color: "var(--brand-charcoal)" }}>Complete your profile</h2>
+            <Link href="/dashboard/settings" className="text-xs font-medium" style={{ color: "var(--brand-green-mid)" }}>
+              Go to settings →
+            </Link>
+          </div>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="flex-1 h-2 rounded-full" style={{ background: "var(--brand-line)" }}>
+              <div className="h-2 rounded-full transition-all" style={{ width: `${profilePercent}%`, background: "var(--brand-green)" }} />
+            </div>
+            <span className="text-xs font-semibold" style={{ color: "var(--brand-charcoal-soft)" }}>{profilePercent}%</span>
           </div>
           <div className="grid grid-cols-2 gap-2">
             {[
@@ -283,11 +229,12 @@ export default async function DashboardHome() {
               { label: "Logo", done: !!vendor.logo_url },
               { label: "Social link", done: !!(vendor.instagram_url || vendor.facebook_url || vendor.tiktok_url) },
             ].map(item => (
-              <div key={item.label} className="flex items-center gap-1.5">
-                <span style={{ color: item.done ? "var(--brand-green)" : "var(--brand-line)", fontSize: "14px" }}>
+              <div key={item.label} className="flex items-center gap-2 rounded-lg px-3 py-2"
+                style={{ background: item.done ? "var(--brand-green-light)" : "var(--brand-surface)", border: `0.5px solid ${item.done ? "var(--brand-green)" : "var(--brand-line)"}` }}>
+                <span style={{ color: item.done ? "var(--brand-green-mid)" : "var(--brand-line)", fontSize: 14, fontWeight: 700 }}>
                   {item.done ? "✓" : "○"}
                 </span>
-                <span className="text-xs" style={{ color: item.done ? "var(--brand-charcoal-soft)" : "var(--brand-charcoal)" }}>
+                <span className="text-xs" style={{ color: item.done ? "var(--brand-green-dark)" : "var(--brand-charcoal-soft)" }}>
                   {item.label}
                 </span>
               </div>
@@ -296,38 +243,30 @@ export default async function DashboardHome() {
         </div>
       )}
 
-      {/* Public page link */}
-      <div className="rounded-xl border p-4" style={{ borderColor: "var(--brand-line)", background: "#fafaf8" }}>
-        <div className="flex items-center justify-between gap-3">
+      {/* Referral */}
+      <div className="rounded-2xl p-5" style={{ background: "var(--brand-surface)", border: "0.5px solid var(--brand-line)" }}>
+        <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-medium">Your public page</p>
-            <p className="text-xs mt-0.5" style={{ color: "var(--brand-charcoal-soft)" }}>
-              Share this link on Instagram, Facebook, TikTok, and Google.
-            </p>
+            <div className="text-sm font-semibold mb-1" style={{ color: "var(--brand-charcoal)" }}>🔗 Refer other food trucks</div>
+            <div className="text-xs" style={{ color: "var(--brand-charcoal-soft)" }}>Earn a free month of Pro every time someone you refer upgrades.</div>
           </div>
-          <a
-            href={`/t/${vendor.slug}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium border"
-            style={{ borderColor: "var(--brand-green)", color: "var(--brand-green-dark)" }}>
-            View page ↗
-          </a>
-        </div>
-        <div className="mt-3 rounded-lg px-3 py-2 text-xs font-mono"
-          style={{ background: "var(--brand-green-light)", color: "var(--brand-green-dark)" }}>
-          vendorbeacon.app/t/{vendor.slug}
+          <Link href="/dashboard/settings"
+            className="text-xs font-semibold px-3 py-2 rounded-lg whitespace-nowrap"
+            style={{ background: "var(--brand-green)", color: "var(--brand-green-darker)" }}>
+            Get your link
+          </Link>
         </div>
       </div>
 
       {/* Feedback */}
-      <div className="rounded-xl border p-4" style={{ borderColor: "var(--brand-line)" }}>
-        <h2 className="text-sm font-semibold mb-1">Got feedback?</h2>
-        <p className="text-sm mb-4" style={{ color: "var(--brand-charcoal-soft)" }}>
+      <div className="rounded-2xl p-5" style={{ background: "#fff", border: "0.5px solid var(--brand-line)" }}>
+        <h2 className="text-sm font-semibold mb-1" style={{ color: "var(--brand-charcoal)" }}>Got feedback?</h2>
+        <p className="text-xs mb-4" style={{ color: "var(--brand-charcoal-soft)" }}>
           Found a bug, have an idea, or just want to tell us something? We read everything.
         </p>
         <FeedbackForm vendorId={vendor.id} vendorName={vendor.business_name} vendorEmail={vendor.contact_email} />
       </div>
+
     </div>
   );
 }

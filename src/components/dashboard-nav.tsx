@@ -7,15 +7,11 @@ const TABS = [
   { href: "/dashboard", label: "Home", proOnly: false },
   { href: "/dashboard/schedule", label: "Schedule", proOnly: false },
   { href: "/dashboard/bookings", label: "Bookings", proOnly: true },
-  { href: "/dashboard/venues", label: "Venue board", proOnly: true },
+  { href: "/dashboard/venues", label: "Venues", proOnly: true },
   { href: "/dashboard/settings", label: "Settings", proOnly: false },
 ];
 
-export function DashboardNav({
-  slug,
-  isPro,
-  pendingBookings,
-}: {
+export function DashboardNav({ slug, isPro, pendingBookings }: {
   slug: string;
   isPro: boolean;
   pendingBookings: number;
@@ -23,49 +19,41 @@ export function DashboardNav({
   const pathname = usePathname();
 
   return (
-    <div className="flex items-center justify-between border-b" style={{ borderColor: "var(--brand-line)" }}>
-      <nav className="flex gap-0 overflow-x-auto">
-        {TABS.map(tab => {
-          const active = pathname === tab.href;
-          const locked = tab.proOnly && !isPro;
-          const showBadge = tab.href === "/dashboard/bookings" && pendingBookings > 0 && isPro;
+    <nav className="flex items-center gap-0 overflow-x-auto">
+      {TABS.map(tab => {
+        const active = pathname === tab.href;
+        const locked = tab.proOnly && !isPro;
+        const showBadge = tab.href === "/dashboard/bookings" && pendingBookings > 0 && isPro;
 
-          return (
-            <Link
-              key={tab.href}
-              href={locked ? "/pricing" : tab.href}
-              className="relative text-xs sm:text-sm py-3 px-3 border-b-2 transition flex items-center gap-1.5 whitespace-nowrap"
-              style={{
-                borderColor: active ? "var(--brand-green)" : "transparent",
-                color: active ? "var(--brand-charcoal)" : "var(--brand-charcoal-soft)",
-                fontWeight: active ? 500 : 400,
-                opacity: locked ? 0.6 : 1,
-              }}>
-              {tab.label}
-              {locked && (
-                <span className="text-xs px-1 py-0.5 rounded font-medium"
-                  style={{ background: "var(--brand-green-light)", color: "var(--brand-green-dark)", fontSize: "10px" }}>
-                  PRO
-                </span>
-              )}
-              {showBadge && (
-                <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 rounded-full text-white flex items-center justify-center font-bold"
-                  style={{ background: "#DC2626", fontSize: "9px", padding: "0 3px" }}>
-                  {pendingBookings > 9 ? "9+" : pendingBookings}
-                </span>
-              )}
-            </Link>
-          );
-        })}
-      </nav>
-      <a
-        href={`/t/${slug}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-xs sm:text-sm py-3 pl-3 underline shrink-0"
-        style={{ color: "var(--brand-green-dark)" }}>
-        Public page ↗
+        return (
+          <Link key={tab.href} href={locked ? "/pricing" : tab.href}
+            className="relative flex items-center gap-1.5 whitespace-nowrap px-4 py-3 text-sm transition border-b-2"
+            style={{
+              borderColor: active ? "var(--brand-green)" : "transparent",
+              color: active ? "#fff" : "#888",
+              fontWeight: active ? 600 : 400,
+            }}>
+            {tab.label}
+            {locked && (
+              <span className="text-xs rounded px-1.5 py-0.5 font-semibold"
+                style={{ background: "var(--brand-green)", color: "var(--brand-green-darker)", fontSize: 10 }}>
+                PRO
+              </span>
+            )}
+            {showBadge && (
+              <span className="absolute top-1.5 right-0.5 min-w-[16px] h-4 rounded-full flex items-center justify-center font-bold"
+                style={{ background: "#FF3D00", color: "#fff", fontSize: 9, padding: "0 3px" }}>
+                {pendingBookings > 9 ? "9+" : pendingBookings}
+              </span>
+            )}
+          </Link>
+        );
+      })}
+      <a href={`/t/${slug}`} target="_blank" rel="noopener noreferrer"
+        className="ml-auto text-xs px-4 py-3 whitespace-nowrap font-medium"
+        style={{ color: "var(--brand-green)" }}>
+        View public page ↗
       </a>
-    </div>
+    </nav>
   );
 }

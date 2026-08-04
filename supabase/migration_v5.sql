@@ -60,3 +60,7 @@ create policy "Vendors can insert own analytics events"
 -- Early adopter flag for vendors
 alter table public.vendors
   add column if not exists is_early_adopter boolean not null default false;
+
+-- Allow null contact_email for public space venue listings
+alter table public.venue_listings
+  alter column contact_email drop not null;
