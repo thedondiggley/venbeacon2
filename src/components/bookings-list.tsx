@@ -1,275 +1,156 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { Button, Card, Badge, PageHeader, Tabs, Modal, useToast, AlertBanner } from "@/components/ui";
 
 export type Booking = {
-  id: string;
-  vendor_id: string;
-  venue_name: string;
-  contact_name: string;
-  contact_email: string;
-  contact_phone: string | null;
-  event_date: string;
-  start_time: string;
-  end_time: string;
-  venue_address: string;
-  event_type: string;
-  expected_attendance: string | null;
-  notes: string | null;
-  status: "pending" | "approved" | "declined";
+  id: string; vendor_id: string; venue_name: string;
+  venue_contact_name: string; venue_contact_email: string;
+  venue_contact_phone: string | null; event_date: string;
+  event_details: string | null; status: "pending" | "approved" | "declined";
   created_at: string;
 };
 
-const EVENT_TYPE_LABELS: Record<string, string> = {
-  brewery: "Brewery", apartment: "Apartment", office: "Office park",
-  festival: "Festival", school: "School", private: "Private event", other: "Other",
-};
+function fmt(d: string) { return new Date(d + "T12:00:00").toLocaleDateString(undefined, { weekday: "long", year: "numeric", month: "long", day: "numeric" }); }
+function fmtShort(d: string) { return new Date(d).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }); }
 
-function formatDate(d: string) {
-  return new Date(d + "T12:00:00").toLocaleDateString(undefined, {
-    weekday: "short", month: "short", day: "numeric", year: "numeric",
-  });
-}
-
-function formatTime(t: string) {
-  const [h, m] = t.split(":").map(Number);
-  const ap = h >= 12 ? "PM" : "AM";
-  const h12 = h > 12 ? h - 12 : h === 0 ? 12 : h;
-  return `${h12}:${m.toString().padStart(2, "0")} ${ap}`;
-}
-
-function BookingCard({
-  booking, onApprove, onDecline, onDelete,
-}: {
-  booking: Booking;
-  onApprove?: () => Promise<void>;
-  onDecline?: () => Promise<void>;
-  onDelete?: () => Promise<void>;
-}) {
-  const [loading, setLoading] = useState<string | null>(null);
-
-  async function handle(action: string, fn: () => Promise<void>) {
-    setLoading(action);
-    await fn();
-    setLoading(null);
-  }
-
-  return (
-    <div className="rounded-xl border p-4" style={{ borderColor: "var(--brand-line)" }}>
-      <div className="flex items-start justify-between gap-3 mb-3">
-        <div>
-          <div className="font-medium text-sm">{booking.venue_name}</div>
-          <div className="text-xs mt-0.5" style={{ color: "var(--brand-charcoal-soft)" }}>
-            {EVENT_TYPE_LABELS[booking.event_type] ?? booking.event_type}
-          </div>
-        </div>
-        <span className="text-xs px-2 py-0.5 rounded-full shrink-0 font-medium"
-          style={{
-            background: booking.status === "approved" ? "var(--brand-green-light)" : booking.status === "declined" ? "#FEE2E2" : "#FEF9C3",
-            color: booking.status === "approved" ? "var(--brand-green-dark)" : booking.status === "declined" ? "#991B1B" : "#854D0E",
-          }}>
-          {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
-        </span>
-      </div>
-
-      <div className="space-y-1 mb-3">
-        <p className="text-sm font-medium">📅 {formatDate(booking.event_date)}</p>
-        <p className="text-sm" style={{ color: "var(--brand-charcoal-soft)" }}>
-          🕐 {formatTime(booking.start_time)} – {formatTime(booking.end_time)}
-        </p>
-        <p className="text-sm" style={{ color: "var(--brand-charcoal-soft)" }}>
-          📍 {booking.venue_address}
-        </p>
-        {booking.expected_attendance && (
-          <p className="text-sm" style={{ color: "var(--brand-charcoal-soft)" }}>
-            👥 {booking.expected_attendance} expected
-          </p>
-        )}
-      </div>
-
-      <div className="border-t pt-3 mb-3" style={{ borderColor: "var(--brand-line)" }}>
-        <p className="text-xs font-semibold mb-1" style={{ color: "var(--brand-charcoal-soft)" }}>CONTACT</p>
-        <p className="text-sm">{booking.contact_name}</p>
-        <a href={`mailto:${booking.contact_email}`} className="text-sm underline block"
-          style={{ color: "var(--brand-green-dark)" }}>{booking.contact_email}</a>
-        {booking.contact_phone && (
-          <a href={`tel:${booking.contact_phone}`} className="text-sm underline block"
-            style={{ color: "var(--brand-green-dark)" }}>{booking.contact_phone}</a>
-        )}
-      </div>
-
-      {booking.notes && (
-        <p className="text-sm italic mb-3 pb-3 border-b"
-          style={{ color: "var(--brand-charcoal-soft)", borderColor: "var(--brand-line)" }}>
-          &quot;{booking.notes}&quot;
-        </p>
-      )}
-
-      {booking.status === "pending" && onApprove && onDecline && (
-        <div className="flex gap-2">
-          <button onClick={() => handle("approve", onApprove)}
-            disabled={loading !== null}
-            className="flex-1 rounded-lg py-2 text-sm font-medium text-white disabled:opacity-60"
-            style={{ background: "var(--brand-green)" }}>
-            {loading === "approve" ? "Approving..." : "Approve"}
-          </button>
-          <button onClick={() => handle("decline", onDecline)}
-            disabled={loading !== null}
-            className="flex-1 rounded-lg py-2 text-sm font-medium border disabled:opacity-60"
-            style={{ borderColor: "var(--brand-line)", color: "var(--brand-charcoal)" }}>
-            {loading === "decline" ? "Declining..." : "Decline"}
-          </button>
-        </div>
-      )}
-
-      {booking.status === "declined" && onDelete && (
-        <button onClick={() => handle("delete", onDelete)}
-          disabled={loading !== null}
-          className="text-sm underline disabled:opacity-60"
-          style={{ color: "#A32D2D" }}>
-          {loading === "delete" ? "Deleting..." : "Delete request"}
-        </button>
-      )}
-    </div>
-  );
-}
-
-type Tab = "pending" | "approved" | "declined";
-
-export function BookingsList({
-  vendorId,
-  initialBookings,
-}: {
-  vendorId: string;
-  initialBookings: Booking[];
-}) {
-  const [bookings, setBookings] = useState<Booking[]>(initialBookings);
-  const [activeTab, setActiveTab] = useState<Tab>("pending");
-  const supabase = createClient();
+export function BookingsList({ bookings: initial }: { bookings: Booking[] }) {
+  const { toast } = useToast();
+  const [bookings, setBookings] = useState(initial);
+  const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [tab, setTab] = useState<"pending" | "approved" | "declined">("pending");
+  const [selected, setSelected] = useState<Booking | null>(null);
 
   const pending = bookings.filter(b => b.status === "pending");
   const approved = bookings.filter(b => b.status === "approved");
   const declined = bookings.filter(b => b.status === "declined");
+  const shown = bookings.filter(b => b.status === tab).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
-  const tabCounts: Record<Tab, number> = {
-    pending: pending.length,
-    approved: approved.length,
-    declined: declined.length,
-  };
-
-  const tabList: { key: Tab; label: string }[] = [
-    { key: "pending", label: "Pending" },
-    { key: "approved", label: "Approved" },
-    { key: "declined", label: "Declined" },
-  ];
-
-  async function approve(id: string) {
-    const booking = bookings.find(b => b.id === id);
-    if (!booking) return;
-
-    await supabase.from("bookings").update({ status: "approved" }).eq("id", id);
-
-    await supabase.from("locations").insert({
-      vendor_id: vendorId,
-      title: booking.venue_name,
-      address: booking.venue_address,
-      start_time: `${booking.event_date}T${booking.start_time}:00`,
-      end_time: `${booking.event_date}T${booking.end_time}:00`,
-      notes: booking.notes ?? null,
-      source: "booking",
-      booking_id: id,
-    });
-
-    await fetch("/api/bookings/notify", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ bookingId: id, action: "approved" }),
-    }).catch(() => {});
-
-    setBookings(prev => prev.map(b => b.id === id ? { ...b, status: "approved" as const } : b));
+  async function handleAction(id: string, action: "approve" | "decline") {
+    setLoadingId(id);
+    try {
+      const res = await fetch(`/api/bookings/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action }) });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setBookings(prev => prev.map(b => b.id === id ? { ...b, status: action === "approve" ? "approved" : "declined" } : b));
+      toast(action === "approve" ? "Booking approved — added to your schedule." : "Booking declined.", action === "approve" ? "success" : "info");
+      setSelected(null);
+    } catch (err: any) {
+      toast(err.message || "Something went wrong.", "error");
+    } finally {
+      setLoadingId(null);
+    }
   }
 
-  async function decline(id: string) {
-    await supabase.from("bookings").update({ status: "declined" }).eq("id", id);
-
-    await fetch("/api/bookings/notify", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ bookingId: id, action: "declined" }),
-    }).catch(() => {});
-
-    setBookings(prev => prev.map(b => b.id === id ? { ...b, status: "declined" as const } : b));
-  }
-
-  async function deleteBooking(id: string) {
-    await supabase.from("bookings").delete().eq("id", id);
-    setBookings(prev => prev.filter(b => b.id !== id));
-  }
-
-  const current = activeTab === "pending" ? pending : activeTab === "approved" ? approved : declined;
-
-  if (bookings.length === 0) {
-    return (
-      <div className="rounded-xl border p-6 text-center" style={{ borderColor: "var(--brand-line)" }}>
-        <p className="text-sm font-medium">No booking requests yet.</p>
-        <p className="text-sm mt-2" style={{ color: "var(--brand-charcoal-soft)" }}>
-          Once you share your public page link, venues and event organizers can submit booking requests here.
-          You'll get an email notification each time one comes in.
-        </p>
-      </div>
-    );
-  }
+  const badgeVariant = (s: string) => s === "pending" ? "warning" : s === "approved" ? "green" : "ghost";
 
   return (
-    <div>
-      {/* Tabs */}
-      <div className="flex border-b mb-5" style={{ borderColor: "var(--brand-line)" }}>
-        {tabList.map(tab => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className="flex items-center gap-1.5 px-4 py-2.5 text-sm border-b-2 transition"
-            style={{
-              borderColor: activeTab === tab.key ? "var(--brand-green)" : "transparent",
-              color: activeTab === tab.key ? "var(--brand-charcoal)" : "var(--brand-charcoal-soft)",
-              fontWeight: activeTab === tab.key ? 500 : 400,
-              background: "none",
-            }}>
-            {tab.label}
-            {tabCounts[tab.key] > 0 && (
-              <span className="text-xs font-bold px-1.5 py-0.5 rounded-full"
-                style={{
-                  background: tab.key === "pending" ? "var(--brand-green)" : tab.key === "declined" ? "#FEE2E2" : "var(--brand-green-light)",
-                  color: tab.key === "pending" ? "#fff" : tab.key === "declined" ? "#991B1B" : "var(--brand-green-dark)",
-                }}>
-                {tabCounts[tab.key]}
-              </span>
-            )}
-          </button>
-        ))}
-      </div>
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }} className="animate-fade-in">
+      <PageHeader title="Bookings" description="Venue requests to book you for events or regular spots." />
 
-      {/* Tab content */}
-      {current.length === 0 ? (
-        <div className="rounded-xl border p-6 text-center" style={{ borderColor: "var(--brand-line)" }}>
-          <p className="text-sm" style={{ color: "var(--brand-charcoal-soft)" }}>
-            No {activeTab} requests.
-          </p>
-        </div>
+      {pending.length > 0 && (
+        <AlertBanner type="success" title={`${pending.length} request${pending.length > 1 ? "s" : ""} need your response`} description="Venues are waiting. Respond within 48 hours to maintain good standing." />
+      )}
+
+      <Tabs
+        active={tab}
+        onChange={v => setTab(v as typeof tab)}
+        tabs={[
+          { value: "pending", label: "Pending", count: pending.length },
+          { value: "approved", label: "Approved", count: approved.length },
+          { value: "declined", label: "Declined", count: declined.length },
+        ]}
+      />
+
+      {shown.length === 0 ? (
+        <Card padding="lg">
+          <div style={{ textAlign: "center", padding: "32px 0" }}>
+            <p style={{ fontSize: 36, marginBottom: 14 }}>📥</p>
+            <p style={{ fontSize: 16, fontWeight: 700, color: "var(--text)", marginBottom: 6 }}>
+              {tab === "pending" ? "No pending requests" : tab === "approved" ? "No approved bookings yet" : "No declined bookings"}
+            </p>
+            <p style={{ fontSize: 14, color: "var(--text-3)" }}>
+              {tab === "pending" ? "When venues request to book you, they'll show up here." : "Approved bookings are automatically added to your schedule."}
+            </p>
+          </div>
+        </Card>
       ) : (
-        <div className="space-y-3">
-          {current.map(b => (
-            <BookingCard
-              key={b.id}
-              booking={b}
-              onApprove={b.status === "pending" ? () => approve(b.id) : undefined}
-              onDecline={b.status === "pending" ? () => decline(b.id) : undefined}
-              onDelete={b.status === "declined" ? () => deleteBooking(b.id) : undefined}
-            />
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {shown.map(b => (
+            <div key={b.id}
+              onClick={() => setSelected(b)}
+              style={{
+                display: "flex", alignItems: "center", gap: 14, padding: "16px 18px",
+                background: "var(--surface)", borderRadius: "var(--r-lg)",
+                border: `1px solid ${b.status === "pending" ? "var(--border-2)" : "var(--border)"}`,
+                cursor: "pointer", transition: "all var(--t)",
+                boxShadow: "var(--shadow-sm)",
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = "var(--green-border)"; (e.currentTarget as HTMLDivElement).style.boxShadow = "var(--shadow-md)"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = b.status === "pending" ? "var(--border-2)" : "var(--border)"; (e.currentTarget as HTMLDivElement).style.boxShadow = "var(--shadow-sm)"; }}
+            >
+              <div style={{ width: 44, height: 44, borderRadius: "var(--r-md)", background: "var(--green-light)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>🏢</div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                  <p style={{ fontSize: 15, fontWeight: 700, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{b.venue_name}</p>
+                  <Badge variant={badgeVariant(b.status) as any} style={{ flexShrink: 0 }}>
+                    {b.status.charAt(0).toUpperCase() + b.status.slice(1)}
+                  </Badge>
+                </div>
+                <p style={{ fontSize: 13, color: "var(--text-3)" }}>{fmt(b.event_date)}</p>
+                <p style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>From {b.venue_contact_name} · Received {fmtShort(b.created_at)}</p>
+              </div>
+              {b.status === "pending" && (
+                <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                  <button onClick={e => { e.stopPropagation(); handleAction(b.id, "approve"); }} disabled={loadingId === b.id}
+                    style={{ background: "var(--green)", color: "var(--green-dark)", fontSize: 12, fontWeight: 700, padding: "7px 14px", borderRadius: 9999, border: "none", cursor: "pointer", opacity: loadingId === b.id ? 0.6 : 1 }}>
+                    {loadingId === b.id ? "..." : "Approve"}
+                  </button>
+                  <button onClick={e => { e.stopPropagation(); handleAction(b.id, "decline"); }} disabled={loadingId === b.id}
+                    style={{ background: "var(--danger-bg)", color: "var(--danger)", fontSize: 12, fontWeight: 700, padding: "7px 14px", borderRadius: 9999, border: "1px solid var(--danger)", cursor: "pointer", opacity: loadingId === b.id ? 0.6 : 1 }}>
+                    Decline
+                  </button>
+                </div>
+              )}
+              <span style={{ color: "var(--text-muted)", fontSize: 16, flexShrink: 0 }}>›</span>
+            </div>
           ))}
         </div>
       )}
+
+      {/* Booking detail modal */}
+      <Modal open={!!selected} onClose={() => setSelected(null)} title={selected?.venue_name}
+        footer={selected?.status === "pending" ? (
+          <>
+            <Button variant="danger" onClick={() => handleAction(selected.id, "decline")} loading={loadingId === selected.id}>Decline</Button>
+            <Button onClick={() => handleAction(selected.id, "approve")} loading={loadingId === selected.id}>Approve booking</Button>
+          </>
+        ) : undefined}
+      >
+        {selected && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{ padding: "14px 16px", background: "var(--green-light)", borderRadius: "var(--r-md)", border: "1px solid var(--green-border)" }}>
+              <p style={{ fontSize: 13, fontWeight: 600, color: "var(--green-dark)", marginBottom: 2 }}>Event date</p>
+              <p style={{ fontSize: 16, fontWeight: 700, color: "var(--green-dark)" }}>{fmt(selected.event_date)}</p>
+            </div>
+            {[
+              { label: "Contact name", value: selected.venue_contact_name },
+              { label: "Contact email", value: selected.venue_contact_email },
+              { label: "Contact phone", value: selected.venue_contact_phone },
+              { label: "Event details", value: selected.event_details },
+            ].filter(f => f.value).map(f => (
+              <div key={f.label}>
+                <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text-3)", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 4 }}>{f.label}</p>
+                <p style={{ fontSize: 14, color: "var(--text)" }}>{f.value}</p>
+              </div>
+            ))}
+            <div style={{ padding: "12px 16px", background: "var(--dark-2)", borderRadius: "var(--r-md)" }}>
+              <p style={{ fontSize: 12, color: "var(--text-on-dark-3)" }}>Status: <span style={{ color: selected.status === "approved" ? "var(--green)" : selected.status === "declined" ? "var(--danger)" : "var(--warning)", fontWeight: 700 }}>{selected.status}</span></p>
+              {selected.status === "pending" && <p style={{ fontSize: 12, color: "var(--text-on-dark-3)", marginTop: 4 }}>Approving will automatically add this to your schedule.</p>}
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

@@ -2,42 +2,13 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { Button, Input, Textarea, Select, Checkbox, useToast, Section, Divider } from "@/components/ui";
 import { handleToUrl, urlToHandle } from "@/lib/social-handles";
-
-const FOOD_TYPES = [
-  "American", "BBQ", "Breakfast / Brunch", "Burgers", "Caribbean", "Chinese",
-  "Coffee / Drinks", "Desserts / Ice Cream", "Greek / Mediterranean", "Hot Dogs",
-  "Indian", "Italian / Pizza", "Japanese", "Korean", "Latin American",
-  "Mexican / Tacos", "Pizza", "Sandwiches / Wraps", "Seafood", "Soul Food",
-  "Southern", "Thai", "Vegan / Vegetarian", "Wings", "Other"
-];
-
-type Vendor = {
-  id: string;
-  business_name: string;
-  slug: string;
-  description: string | null;
-  contact_email: string | null;
-  contact_phone: string | null;
-  instagram_url: string | null;
-  facebook_url: string | null;
-  tiktok_url: string | null;
-  logo_url: string | null;
-  owner_name: string | null;
-  food_type: string | null;
-  service_areas: string | null;
-  website_url: string | null;
-  power_needs: string | null;
-  water_needs: boolean;
-  insurance_info: string | null;
-};
+import type { Vendor } from "@/lib/vendor";
 
 export function SettingsForm({ vendor }: { vendor: Vendor }) {
-  const supabase = createClient();
+  const { toast } = useToast();
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [logoUploading, setLogoUploading] = useState(false);
 
   const [businessName, setBusinessName] = useState(vendor.business_name ?? "");
   const [ownerName, setOwnerName] = useState(vendor.owner_name ?? "");
@@ -52,211 +23,162 @@ export function SettingsForm({ vendor }: { vendor: Vendor }) {
   const [powerNeeds, setPowerNeeds] = useState(vendor.power_needs ?? "");
   const [waterNeeds, setWaterNeeds] = useState(vendor.water_needs ?? false);
   const [insuranceInfo, setInsuranceInfo] = useState(vendor.insurance_info ?? "");
-  const [logoUrl, setLogoUrl] = useState(vendor.logo_url ?? "");
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState(vendor.logo_url ?? "");
+  const [uploadingLogo, setUploadingLogo] = useState(false);
 
-  async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+  function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    if (file.size > 5 * 1024 * 1024) { setError("Logo must be under 5MB."); return; }
-    if (!["image/jpeg", "image/png", "image/webp", "image/gif"].includes(file.type)) {
-      setError("Logo must be a JPEG, PNG, WebP, or GIF."); return;
-    }
-
-    setLogoUploading(true);
-    setError(null);
-    const form = new FormData();
-    form.append("file", file);
-    try {
-      const res = await fetch("/api/upload-logo", { method: "POST", body: form });
-      if (!res.ok) throw new Error("Upload failed.");
-      const data = await res.json();
-      setLogoUrl(data.url);
-    } catch {
-      setError("Logo upload failed. Please try again.");
-    } finally {
-      setLogoUploading(false);
-    }
+    setLogoFile(file);
+    setLogoPreview(URL.createObjectURL(file));
   }
 
-  async function handleSave(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleSave() {
     setSaving(true);
-    setError(null);
-    setSaved(false);
+    try {
+      const supabase = createClient();
+      let logoUrl = vendor.logo_url;
 
-    if (!businessName.trim()) { setError("Business name is required."); setSaving(false); return; }
+      if (logoFile) {
+        setUploadingLogo(true);
+        const formData = new FormData();
+        formData.append("file", logoFile);
+        const res = await fetch("/api/upload-logo", { method: "POST", body: formData });
+        const data = await res.json();
+        if (res.ok && data.url) logoUrl = data.url;
+        setUploadingLogo(false);
+      }
 
-    const { error: updateError } = await supabase.from("vendors").update({
-      business_name: businessName,
-      owner_name: ownerName || null,
-      description: description || null,
-      contact_phone: phone || null,
-      food_type: foodType || null,
-      service_areas: serviceAreas || null,
-      website_url: websiteUrl || null,
-      instagram_url: handleToUrl("instagram", instagram),
-      facebook_url: handleToUrl("facebook", facebook),
-      tiktok_url: handleToUrl("tiktok", tiktok),
-      power_needs: powerNeeds || null,
-      water_needs: waterNeeds,
-      insurance_info: insuranceInfo || null,
-      logo_url: logoUrl || null,
-      updated_at: new Date().toISOString(),
-    }).eq("id", vendor.id);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
 
-    if (updateError) { setError(updateError.message); } else { setSaved(true); }
-    setSaving(false);
+      const { error } = await supabase.from("vendors").update({
+        business_name: businessName,
+        owner_name: ownerName || null,
+        description: description || null,
+        contact_phone: phone || null,
+        food_type: foodType || null,
+        service_areas: serviceAreas || null,
+        website_url: websiteUrl || null,
+        instagram_url: handleToUrl("instagram", instagram),
+        facebook_url: handleToUrl("facebook", facebook),
+        tiktok_url: handleToUrl("tiktok", tiktok),
+        power_needs: powerNeeds || null,
+        water_needs: waterNeeds,
+        insurance_info: insuranceInfo || null,
+        logo_url: logoUrl,
+      }).eq("user_id", user.id);
+
+      if (error) throw error;
+      toast("Profile saved");
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Failed to save", "error");
+    } finally {
+      setSaving(false);
+    }
   }
-
-  const inputCls = "w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2";
-  const inputStyle = { borderColor: "var(--brand-line)" };
 
   return (
-    <form onSubmit={handleSave} className="space-y-6">
-      <h2 className="text-base font-medium">Business profile</h2>
+    <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
 
       {/* Logo */}
-      <div>
-        <label className="block text-sm font-medium mb-2">Logo</label>
-        <div className="flex items-center gap-4">
-          {logoUrl ? (
-            <img src={logoUrl} alt="Business logo" className="w-16 h-16 rounded-xl object-cover border" style={{ borderColor: "var(--brand-line)" }} />
-          ) : (
-            <div className="w-16 h-16 rounded-xl flex items-center justify-center border text-2xl" style={{ borderColor: "var(--brand-line)", background: "var(--brand-green-light)" }}>🚚</div>
-          )}
+      <Section title="Logo">
+        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          <div style={{
+            width: 72, height: 72, borderRadius: "var(--r-lg)",
+            background: logoPreview ? "transparent" : "var(--green-light)",
+            border: "1px solid var(--border-2)",
+            overflow: "hidden", flexShrink: 0,
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            {logoPreview ? (
+              <img src={logoPreview} alt="Logo" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            ) : (
+              <span style={{ fontSize: 28 }}>🚚</span>
+            )}
+          </div>
           <div>
-            <label className="cursor-pointer text-sm font-medium underline" style={{ color: "var(--brand-green-dark)" }}>
-              {logoUploading ? "Uploading..." : logoUrl ? "Change logo" : "Upload logo"}
-              <input type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" disabled={logoUploading} />
+            <label style={{
+              display: "inline-flex", alignItems: "center", gap: 6,
+              fontSize: 13, fontWeight: 600, color: "var(--green-mid)",
+              cursor: "pointer", padding: "8px 14px",
+              border: "1px solid var(--green-border)", borderRadius: "var(--r-full)",
+              background: "var(--green-light)",
+            }}>
+              {uploadingLogo ? "Uploading..." : "Change logo"}
+              <input type="file" accept="image/*" onChange={handleLogoChange} style={{ display: "none" }} />
             </label>
-            <p className="text-xs mt-0.5" style={{ color: "var(--brand-charcoal-soft)" }}>JPEG, PNG, WebP · Max 5MB</p>
+            <p style={{ fontSize: 12, color: "var(--text-3)", marginTop: 6 }}>PNG, JPG up to 5MB. Square images look best.</p>
           </div>
         </div>
-      </div>
+      </Section>
+
+      <Divider />
 
       {/* Business info */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium mb-1.5">Business name <span style={{ color: "#A32D2D" }}>*</span></label>
-          <input type="text" value={businessName} onChange={e => setBusinessName(e.target.value)} className={inputCls} style={inputStyle} />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1.5">Owner / operator name</label>
-          <input type="text" value={ownerName} onChange={e => setOwnerName(e.target.value)} placeholder="Your full name" className={inputCls} style={inputStyle} />
-        </div>
-      </div>
+      <Section title="Business info">
+        <Input label="Business name" value={businessName} onChange={e => setBusinessName(e.target.value)} placeholder="Big Dawg Dogs" required />
+        <Input label="Owner name" value={ownerName} onChange={e => setOwnerName(e.target.value)} placeholder="Your full name" hint="Shown to venues when you contact them" />
+        <Textarea label="Description" value={description} onChange={e => setDescription(e.target.value)} placeholder="Tell venues and customers about your truck — food style, vibe, what makes you stand out." style={{ minHeight: 100 }} />
+        <Input label="Food type / cuisine" value={foodType} onChange={e => setFoodType(e.target.value)} placeholder="BBQ, Tacos, Burgers, etc." />
+        <Input label="Service areas" value={serviceAreas} onChange={e => setServiceAreas(e.target.value)} placeholder="Chattanooga, Rossville, North Georgia" hint="Where you typically operate" />
+      </Section>
 
-      <div>
-        <label className="block text-sm font-medium mb-1.5">Food type / cuisine</label>
-        <select value={foodType} onChange={e => setFoodType(e.target.value)} className={inputCls} style={inputStyle}>
-          <option value="">Select a category</option>
-          {FOOD_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-        </select>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium mb-1.5">Description</label>
-        <textarea rows={3} value={description} onChange={e => setDescription(e.target.value)}
-          placeholder="Describe your food truck — cuisine type, specialties, what makes you unique."
-          className={inputCls} style={inputStyle} />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium mb-1.5">Service areas</label>
-        <input type="text" value={serviceAreas} onChange={e => setServiceAreas(e.target.value)}
-          placeholder="e.g. Chattanooga TN, North Georgia, Dalton GA"
-          className={inputCls} style={inputStyle} />
-        <p className="text-xs mt-1" style={{ color: "var(--brand-charcoal-soft)" }}>Cities and areas you serve, separated by commas</p>
-      </div>
+      <Divider />
 
       {/* Contact */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium mb-1.5">Public phone number</label>
-          <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="(423) 555-0000" className={inputCls} style={inputStyle} />
-          <p className="text-xs mt-1" style={{ color: "var(--brand-charcoal-soft)" }}>
-            Shown on your public page so customers and venues can call you directly. Use whatever number you want the public reaching you on.
-          </p>
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1.5">Website</label>
-          <input type="url" value={websiteUrl} onChange={e => setWebsiteUrl(e.target.value)} placeholder="https://yourtruck.com" className={inputCls} style={inputStyle} />
-        </div>
-      </div>
+      <Section title="Contact and links">
+        <Input label="Public phone number" value={phone} onChange={e => setPhone(e.target.value)} placeholder="(423) 555-0000" type="tel" hint="Shown on your public page so customers and venues can call you" />
+        <Input label="Website" value={websiteUrl} onChange={e => setWebsiteUrl(e.target.value)} placeholder="https://yourtruck.com" type="url" />
 
-      {/* Social links */}
-      <div>
-        <label className="block text-sm font-medium mb-2">Social links</label>
-        <p className="text-xs mb-3" style={{ color: "var(--brand-charcoal-soft)" }}>
-          Just type your username — we'll build the link for you. You can also paste a full link if you'd rather.
-        </p>
-        <div className="space-y-2">
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text-2)" }}>Social links</p>
+          <p style={{ fontSize: 12, color: "var(--text-3)", marginTop: -6 }}>Just your username — we build the link for you.</p>
           {[
-            { label: "Instagram", platform: "instagram" as const, value: instagram, setter: setInstagram, placeholder: "yourtruck" },
-            { label: "Facebook", platform: "facebook" as const, value: facebook, setter: setFacebook, placeholder: "yourtruckpage" },
-            { label: "TikTok", platform: "tiktok" as const, value: tiktok, setter: setTiktok, placeholder: "yourtruck" },
-          ].map(({ label, platform, value, setter, placeholder }) => (
-            <div key={label} className="flex items-center gap-2">
-              <span className="text-xs w-20 shrink-0" style={{ color: "var(--brand-charcoal-soft)" }}>{label}</span>
-              <div className="relative flex-1">
+            { label: "Instagram", value: instagram, setter: setInstagram, prefix: "instagram.com/" },
+            { label: "Facebook", value: facebook, setter: setFacebook, prefix: "facebook.com/" },
+            { label: "TikTok", value: tiktok, setter: setTiktok, prefix: "tiktok.com/@" },
+          ].map(({ label, value, setter, prefix }) => (
+            <div key={label} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-3)", width: 70, flexShrink: 0 }}>{label}</span>
+              <div style={{ flex: 1, position: "relative" }}>
                 {!value.startsWith("http") && (
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm pointer-events-none" style={{ color: "var(--brand-charcoal-soft)" }}>
-                    @
-                  </span>
+                  <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", fontSize: 14, color: "var(--text-3)", pointerEvents: "none" }}>@</span>
                 )}
                 <input
-                  type="text"
                   value={value}
                   onChange={e => setter(e.target.value)}
-                  placeholder={placeholder}
-                  className={inputCls}
-                  style={{ ...inputStyle, paddingLeft: !value.startsWith("http") ? "1.75rem" : undefined }}
+                  placeholder="yourtruck"
+                  style={{
+                    width: "100%", height: 44, borderRadius: "var(--r-md)",
+                    border: "1px solid var(--border-2)", background: "var(--surface)",
+                    color: "var(--text)", fontSize: 14, fontFamily: "inherit",
+                    padding: !value.startsWith("http") ? "0 14px 0 28px" : "0 14px",
+                    outline: "none",
+                  }}
+                  onFocus={e => { e.currentTarget.style.borderColor = "var(--green)"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(57,255,20,0.15)"; }}
+                  onBlur={e => { e.currentTarget.style.borderColor = "var(--border-2)"; e.currentTarget.style.boxShadow = "none"; }}
                 />
               </div>
             </div>
           ))}
         </div>
-        {facebook && !facebook.startsWith("http") && (
-          <p className="text-xs mt-2" style={{ color: "var(--brand-charcoal-soft)" }}>
-            We'll link to facebook.com/{facebook.replace(/^@+/, "")} — if that's not right, paste your full Facebook link instead.
-          </p>
-        )}
-      </div>
+      </Section>
 
-      {/* Operational needs */}
-      <div>
-        <label className="block text-sm font-medium mb-2">Operational needs</label>
-        <div className="space-y-3">
-          <div>
-            <label className="block text-xs font-medium mb-1" style={{ color: "var(--brand-charcoal-soft)" }}>Power needs</label>
-            <input type="text" value={powerNeeds} onChange={e => setPowerNeeds(e.target.value)}
-              placeholder="e.g. 110v 20amp outlet required" className={inputCls} style={inputStyle} />
-          </div>
-          <div className="flex items-center gap-3">
-            <button type="button" onClick={() => setWaterNeeds(!waterNeeds)}
-              className="w-5 h-5 rounded border-2 flex items-center justify-center"
-              style={{ borderColor: waterNeeds ? "var(--brand-green)" : "var(--brand-line)", background: waterNeeds ? "var(--brand-green)" : "#fff" }}>
-              {waterNeeds && <span style={{ color: "#fff", fontSize: "10px" }}>✓</span>}
-            </button>
-            <span className="text-sm">Water hookup required</span>
-          </div>
-          <div>
-            <label className="block text-xs font-medium mb-1" style={{ color: "var(--brand-charcoal-soft)" }}>Insurance / permit info</label>
-            <input type="text" value={insuranceInfo} onChange={e => setInsuranceInfo(e.target.value)}
-              placeholder="e.g. $1M general liability, city health permit" className={inputCls} style={inputStyle} />
-          </div>
-        </div>
-      </div>
+      <Divider />
 
-      {error && <p className="text-sm" style={{ color: "#A32D2D" }}>{error}</p>}
-      {saved && <p className="text-sm" style={{ color: "var(--brand-green-dark)" }}>Profile saved successfully.</p>}
+      {/* Operational */}
+      <Section title="Operational needs" description="Venues use this to check compatibility before reaching out">
+        <Input label="Power needs" value={powerNeeds} onChange={e => setPowerNeeds(e.target.value)} placeholder="30 amp, 20 amp, generator, none" />
+        <Checkbox label="Requires water hookup" checked={waterNeeds} onChange={e => setWaterNeeds(e.target.checked)} />
+        <Input label="Insurance info" value={insuranceInfo} onChange={e => setInsuranceInfo(e.target.value)} placeholder="$1M general liability, certificate on request" hint="Helps venues quickly confirm your coverage" />
+      </Section>
 
-      <button type="submit" disabled={saving}
-        className="rounded-lg px-5 py-2.5 text-sm font-medium text-white disabled:opacity-60"
-        style={{ background: "var(--brand-green)" }}>
-        {saving ? "Saving..." : "Save profile"}
-      </button>
-    </form>
+      <Button onClick={handleSave} loading={saving} size="lg" fullWidth>
+        Save changes
+      </Button>
+
+    </div>
   );
 }

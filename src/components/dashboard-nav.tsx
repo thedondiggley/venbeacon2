@@ -4,11 +4,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const TABS = [
-  { href: "/dashboard", label: "Home", proOnly: false },
-  { href: "/dashboard/schedule", label: "Schedule", proOnly: false },
-  { href: "/dashboard/bookings", label: "Bookings", proOnly: true },
-  { href: "/dashboard/venues", label: "Venues", proOnly: true },
-  { href: "/dashboard/settings", label: "Settings", proOnly: false },
+  { href: "/dashboard", label: "Home", emoji: "⌂", proOnly: false },
+  { href: "/dashboard/schedule", label: "Schedule", emoji: "📍", proOnly: false },
+  { href: "/dashboard/bookings", label: "Bookings", emoji: "📥", proOnly: true },
+  { href: "/dashboard/venues", label: "Venues", emoji: "🏢", proOnly: true },
+  { href: "/dashboard/settings", label: "Settings", emoji: "⚙", proOnly: false },
 ];
 
 export function DashboardNav({ slug, isPro, pendingBookings }: {
@@ -19,40 +19,69 @@ export function DashboardNav({ slug, isPro, pendingBookings }: {
   const pathname = usePathname();
 
   return (
-    <nav className="flex items-center gap-0 overflow-x-auto">
+    <nav style={{ display: "flex", alignItems: "center", gap: 4, overflowX: "auto", paddingBottom: 2 }}>
       {TABS.map(tab => {
         const active = pathname === tab.href;
         const locked = tab.proOnly && !isPro;
         const showBadge = tab.href === "/dashboard/bookings" && pendingBookings > 0 && isPro;
 
         return (
-          <Link key={tab.href} href={locked ? "/pricing" : tab.href}
-            className="relative flex items-center gap-1.5 whitespace-nowrap px-4 py-3 text-sm transition border-b-2"
+          <Link key={tab.href}
+            href={locked ? "/pricing" : tab.href}
             style={{
-              borderColor: active ? "var(--brand-green)" : "transparent",
-              color: active ? "#fff" : "#888",
-              fontWeight: active ? 600 : 400,
+              position: "relative",
+              display: "flex",
+              alignItems: "center",
+              gap: 5,
+              padding: "6px 14px",
+              borderRadius: 9999,
+              fontSize: 13,
+              fontWeight: active ? 700 : 600,
+              textDecoration: "none",
+              whiteSpace: "nowrap",
+              transition: "all 150ms ease",
+              background: active ? "var(--green-dark)" : "rgba(10,42,10,0.12)",
+              color: active ? "var(--green)" : "var(--green-dark)",
             }}>
             {tab.label}
             {locked && (
-              <span className="text-xs rounded px-1.5 py-0.5 font-semibold"
-                style={{ background: "var(--brand-green)", color: "var(--brand-green-darker)", fontSize: 10 }}>
-                PRO
-              </span>
+              <span style={{
+                fontSize: 9, fontWeight: 800, padding: "1px 5px",
+                borderRadius: 9999, background: "var(--green-dark)", color: "var(--green)",
+                letterSpacing: ".04em",
+              }}>PRO</span>
             )}
             {showBadge && (
-              <span className="absolute top-1.5 right-0.5 min-w-[16px] h-4 rounded-full flex items-center justify-center font-bold"
-                style={{ background: "#FF3D00", color: "#fff", fontSize: 9, padding: "0 3px" }}>
+              <span style={{
+                position: "absolute", top: -4, right: -4,
+                minWidth: 16, height: 16, padding: "0 4px",
+                borderRadius: 9999, background: "#FF3D00", color: "#fff",
+                fontSize: 9, fontWeight: 800,
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
                 {pendingBookings > 9 ? "9+" : pendingBookings}
               </span>
             )}
           </Link>
         );
       })}
+
       <a href={`/t/${slug}`} target="_blank" rel="noopener noreferrer"
-        className="ml-auto text-xs px-4 py-3 whitespace-nowrap font-medium"
-        style={{ color: "var(--brand-green)" }}>
-        View public page ↗
+        style={{
+          marginLeft: "auto",
+          display: "flex",
+          alignItems: "center",
+          gap: 5,
+          padding: "6px 14px",
+          borderRadius: 9999,
+          fontSize: 13,
+          fontWeight: 700,
+          textDecoration: "none",
+          background: "#fff",
+          color: "var(--green-dark)",
+          flexShrink: 0,
+        }}>
+        My page ↗
       </a>
     </nav>
   );

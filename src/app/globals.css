@@ -1,38 +1,93 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #1A1A1A;
+  /* Core brand */
+  --green: #39FF14;
+  --green-dark: #0A2A0A;
+  --green-mid: #1A7A1A;
+  --green-light: #F0FFF0;
+  --green-border: #2DB810;
 
-  /* VendorBeacon brand — new palette */
-  --brand-green: #39FF14;
-  --brand-green-dark: #0A5A0A;
-  --brand-green-darker: #0A2A0A;
-  --brand-green-light: #F0FFF0;
-  --brand-green-mid: #1A7A1A;
-  --brand-dark: #1A1A1A;
-  --brand-dark-surface: #242424;
-  --brand-charcoal: #1A1A1A;
-  --brand-charcoal-soft: #555555;
-  --brand-line: #E8E8E8;
-  --brand-line-dark: #2A2A2A;
-  --brand-surface: #F8FFF8;
+  /* Surfaces */
+  --bg: #F6FFF6;
+  --surface: #FFFFFF;
+  --surface-2: #F0FFF0;
+  --dark: #111111;
+  --dark-2: #1A1A1A;
+  --dark-3: #242424;
+  --dark-4: #2E2E2E;
+
+  /* Text */
+  --text: #0A1A0A;
+  --text-2: #2A3A2A;
+  --text-3: #5A6A5A;
+  --text-muted: #8A9A8A;
+  --text-on-green: #0A2A0A;
+  --text-on-dark: #FFFFFF;
+  --text-on-dark-2: #CCCCCC;
+  --text-on-dark-3: #888888;
+
+  /* Borders */
+  --border: #E0EDE0;
+  --border-2: #C8DCC8;
+  --border-dark: #2A2A2A;
+
+  /* Status */
+  --danger: #FF4444;
+  --danger-bg: #FFF0F0;
+  --warning: #FF9500;
+  --warning-bg: #FFF8F0;
+  --success: #39FF14;
+  --success-bg: #F0FFF0;
+
+  /* Radius */
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-xl: 20px;
+  --r-full: 9999px;
+
+  /* Shadow */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.10), 0 4px 8px rgba(0,0,0,0.06);
+
+  /* Transitions */
+  --t: 150ms ease;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-brand: var(--brand-green);
-  --color-brand-dark: var(--brand-green-dark);
-  --color-brand-light: var(--brand-green-light);
-  --color-charcoal: var(--brand-charcoal);
-  --color-charcoal-soft: var(--brand-charcoal-soft);
-  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-mono: ui-monospace, monospace;
-}
+* { box-sizing: border-box; }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans), system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.5;
 }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* Focus */
+:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+}
+
+/* Selection */
+::selection { background: var(--green); color: var(--green-dark); }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.animate-fade-in { animation: fadeIn 200ms ease forwards; }
+.animate-slide-up { animation: slideUp 250ms ease forwards; }
+.animate-pulse { animation: pulse 1.5s ease infinite; }
+.animate-spin { animation: spin 0.8s linear infinite; }

@@ -37,19 +37,22 @@ export const metadata: Metadata = {
 };
 
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { ToastProvider } from "@/components/ui";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="h-full antialiased">
+    <html lang="en" className="h-full">
       <head>
         <link rel="icon" href="/favicon-v2.ico" sizes="any" />
         <link rel="icon" href="/icon-192.png" type="image/png" sizes="192x192" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#639922" />
+        <meta name="theme-color" content="#39FF14" />
       </head>
       <body className="min-h-full flex flex-col">
-        {children}
+        <ToastProvider>
+          {children}
+        </ToastProvider>
         <SpeedInsights />
       </body>
     </html>

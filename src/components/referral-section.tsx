@@ -1,13 +1,12 @@
 "use client";
-
 import { useState } from "react";
+import { Button, Card, useToast } from "@/components/ui";
 
 export function ReferralSection({ referralCode, referralRewardMonths, referralRewardAppliedUntil, referralCount }: {
-  referralCode: string | null;
-  referralRewardMonths: number;
-  referralRewardAppliedUntil: string | null;
-  referralCount: number;
+  referralCode: string | null; referralRewardMonths: number;
+  referralRewardAppliedUntil: string | null; referralCount: number;
 }) {
+  const { toast } = useToast();
   const [copied, setCopied] = useState(false);
   const appUrl = typeof window !== "undefined" ? window.location.origin : "https://vendorbeacon.app";
   const referralLink = referralCode ? `${appUrl}/signup?ref=${referralCode}` : "";
@@ -17,46 +16,38 @@ export function ReferralSection({ referralCode, referralRewardMonths, referralRe
     if (!referralLink) return;
     navigator.clipboard.writeText(referralLink);
     setCopied(true);
+    toast("Link copied to clipboard!");
     setTimeout(() => setCopied(false), 2000);
   }
 
   return (
-    <div>
-      <h2 className="text-base font-medium mb-1">Refer other food trucks</h2>
-      <p className="text-sm mb-4" style={{ color: "var(--brand-charcoal-soft)" }}>
-        Share your link. When someone you refer upgrades to Pro, you get a free month — automatically.
-      </p>
-
-      <div className="rounded-2xl p-5 mb-4" style={{ background: "#1A1A1A" }}>
-        <div className="text-xs font-semibold mb-2" style={{ color: "#888" }}>YOUR REFERRAL LINK</div>
-        <div className="flex gap-2 mb-3">
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <div>
+        <h2 style={{ fontSize: 16, fontWeight: 700, color: "var(--text)", marginBottom: 4 }}>Refer other food trucks</h2>
+        <p style={{ fontSize: 14, color: "var(--text-3)" }}>Share your link. Every operator you refer who upgrades to Pro earns you a free month — automatically, no limit.</p>
+      </div>
+      <Card variant="dark" padding="md">
+        <p style={{ fontSize: 11, fontWeight: 700, color: "var(--text-on-dark-3)", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 12 }}>Your referral link</p>
+        <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
           <input type="text" readOnly value={referralLink}
-            className="flex-1 rounded-xl px-3 py-2 text-xs font-mono"
-            style={{ background: "#242424", color: "var(--brand-green)", border: "0.5px solid #333" }} />
-          <button onClick={copyLink}
-            className="shrink-0 rounded-xl px-4 py-2 text-xs font-semibold"
-            style={{ background: copied ? "var(--brand-green-dark)" : "var(--brand-green)", color: "var(--brand-green-darker)" }}>
+            style={{ flex: 1, height: 40, padding: "0 12px", fontSize: 12, fontFamily: "monospace", background: "var(--dark-3)", color: "var(--green)", border: "1px solid var(--border-dark)", borderRadius: "var(--r-md)", outline: "none" }} />
+          <button onClick={copyLink} style={{ height: 40, padding: "0 16px", background: copied ? "var(--green-dark)" : "var(--green)", color: copied ? "var(--green)" : "var(--green-dark)", fontSize: 13, fontWeight: 700, borderRadius: "var(--r-md)", border: "none", cursor: "pointer", flexShrink: 0, transition: "all var(--t)" }}>
             {copied ? "Copied!" : "Copy"}
           </button>
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-xl p-3 text-center" style={{ background: "#242424" }}>
-            <div className="text-2xl font-semibold" style={{ color: "var(--brand-green)" }}>{referralCount}</div>
-            <div className="text-xs mt-0.5" style={{ color: "#888" }}>People referred</div>
-          </div>
-          <div className="rounded-xl p-3 text-center" style={{ background: "#242424" }}>
-            <div className="text-2xl font-semibold" style={{ color: "var(--brand-green)" }}>{referralRewardMonths}</div>
-            <div className="text-xs mt-0.5" style={{ color: "#888" }}>Free months earned</div>
-          </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+          {[{ label: "Referred", value: referralCount }, { label: "Free months earned", value: referralRewardMonths }].map(s => (
+            <div key={s.label} style={{ background: "var(--dark-3)", borderRadius: "var(--r-md)", padding: "14px", textAlign: "center" }}>
+              <p style={{ fontSize: 28, fontWeight: 700, color: "var(--green)", marginBottom: 4 }}>{s.value}</p>
+              <p style={{ fontSize: 12, color: "var(--text-on-dark-3)" }}>{s.label}</p>
+            </div>
+          ))}
         </div>
-      </div>
-
+      </Card>
       {rewardActive && (
-        <div className="rounded-xl p-3" style={{ background: "var(--brand-green-light)", border: "0.5px solid var(--brand-green)" }}>
-          <p className="text-xs font-medium" style={{ color: "var(--brand-green-dark)" }}>
-            ✓ Your Pro access is covered by referral rewards through{" "}
-            {new Date(referralRewardAppliedUntil!).toLocaleDateString()}
-          </p>
+        <div style={{ padding: "14px 16px", background: "var(--green-light)", borderRadius: "var(--r-md)", border: "1px solid var(--green-border)" }}>
+          <p style={{ fontSize: 14, fontWeight: 700, color: "var(--green-dark)" }}>✓ Pro access covered by referral rewards</p>
+          <p style={{ fontSize: 13, color: "var(--green-dark)", opacity: 0.85, marginTop: 4 }}>Your free months are active through {new Date(referralRewardAppliedUntil!).toLocaleDateString()}.</p>
         </div>
       )}
     </div>

@@ -1,126 +1,103 @@
 "use client";
-
-import { Suspense, useState } from "react";
-import { useSearchParams } from "next/navigation";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Logo } from "@/components/logo";
+import { useRouter } from "next/navigation";
+import { Button, Input } from "@/components/ui";
+import Link from "next/link";
 
-function LoginForm() {
+export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const searchParams = useSearchParams();
-  const isDisabled = searchParams.get("disabled") === "1";
+  const [error, setError] = useState("");
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
+    setError("");
     setLoading(true);
-
-    const supabase = createClient();
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (signInError) {
-      setError(signInError.message);
+    try {
+      const supabase = createClient();
+      const { error: err } = await supabase.auth.signInWithPassword({ email, password });
+      if (err) throw err;
+      router.push("/dashboard");
+      router.refresh();
+    } catch (err: any) {
+      setError("Incorrect email or password.");
+    } finally {
       setLoading(false);
-      return;
     }
-
-    router.push("/dashboard");
-    router.refresh();
   }
 
   return (
-    <div className="w-full max-w-sm">
-      <div className="flex justify-center mb-8">
-        <a href="/"><Logo variant="full" size={40} /></a>
+    <div style={{ minHeight: "100vh", background: "var(--bg)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 16 }}>
+      {/* Logo */}
+      <Link href="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none", marginBottom: 40 }}>
+        <div style={{ width: 40, height: 40, background: "var(--green)", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <span style={{ color: "var(--green-dark)", fontWeight: 800, fontSize: 20 }}>V</span>
+        </div>
+        <span style={{ fontWeight: 800, fontSize: 20, color: "var(--text)", letterSpacing: "-0.02em" }}>VendorBeacon</span>
+      </Link>
+
+      {/* Card */}
+      <div style={{
+        width: "100%", maxWidth: 400,
+        background: "var(--surface)",
+        borderRadius: "var(--r-xl)",
+        border: "1px solid var(--border)",
+        boxShadow: "var(--shadow-lg)",
+        overflow: "hidden",
+      }}>
+        <div style={{ padding: "28px 28px 0" }}>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: "var(--text)", marginBottom: 6, letterSpacing: "-0.02em" }}>Welcome back</h1>
+          <p style={{ fontSize: 14, color: "var(--text-3)", marginBottom: 24 }}>Log in to your VendorBeacon account</p>
+        </div>
+
+        <form onSubmit={handleLogin} style={{ padding: "0 28px 28px", display: "flex", flexDirection: "column", gap: 16 }}>
+          <Input
+            label="Email"
+            type="email"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            placeholder="you@example.com"
+            required
+            autoComplete="email"
+          />
+          <div>
+            <Input
+              label="Password"
+              type="password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              placeholder="••••••••"
+              required
+              autoComplete="current-password"
+            />
+            <div style={{ textAlign: "right", marginTop: 8 }}>
+              <Link href="/forgot-password" style={{ fontSize: 13, color: "var(--green-mid)", fontWeight: 600, textDecoration: "none" }}>
+                Forgot password?
+              </Link>
+            </div>
+          </div>
+
+          {error && (
+            <div style={{ padding: "12px 14px", background: "var(--danger-bg)", borderRadius: "var(--r-md)", border: "1px solid var(--danger)" }}>
+              <p style={{ fontSize: 13, color: "var(--danger)", fontWeight: 600 }}>⚠ {error}</p>
+            </div>
+          )}
+
+          <Button type="submit" loading={loading} fullWidth size="lg">
+            {loading ? "Signing in..." : "Sign in"}
+          </Button>
+        </form>
       </div>
 
-      <h1 className="text-xl font-medium text-center mb-1">Log in</h1>
-      {isDisabled && (
-        <div className="rounded-lg p-3 mb-4 text-sm text-center" style={{ background: "#FEE2E2", color: "#991B1B" }}>
-          This account has been disabled. Contact <a href="/contact" className="underline">support</a> if you believe this is a mistake.
-        </div>
-      )}
-      <p className="text-sm text-center mb-8" style={{ color: "var(--brand-charcoal-soft)" }}>
-        Welcome back.
-      </p>
-
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium mb-1.5">
-            Email
-          </label>
-          <input
-            id="email"
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
-            style={{ borderColor: "var(--brand-line)" }}
-          />
-        </div>
-
-        <div>
-          <label htmlFor="password" className="block text-sm font-medium mb-1.5">
-            Password
-          </label>
-          <input
-            id="password"
-            type="password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
-            style={{ borderColor: "var(--brand-line)" }}
-          />
-        </div>
-
-        {error && (
-          <p className="text-sm" style={{ color: "#A32D2D" }}>
-            {error}
-          </p>
-        )}
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full rounded-lg py-2.5 text-sm font-medium text-white transition disabled:opacity-60"
-          style={{ background: "var(--brand-green)" }}
-        >
-          {loading ? "Logging in..." : "Log in"}
-        </button>
-      </form>
-
-      <p className="text-sm text-center mt-4" style={{ color: "var(--brand-charcoal-soft)" }}>
-        <a href="/forgot-password" className="underline" style={{ color: "var(--brand-charcoal-soft)" }}>
-          Forgot your password?
-        </a>
-      </p>
-
-      <p className="text-sm text-center mt-3" style={{ color: "var(--brand-charcoal-soft)" }}>
+      <p style={{ marginTop: 20, fontSize: 14, color: "var(--text-3)" }}>
         Don&apos;t have an account?{" "}
-        <a href="/signup" className="font-medium underline" style={{ color: "var(--brand-green-dark)" }}>
-          Sign up
-        </a>
+        <Link href="/signup" style={{ color: "var(--green-mid)", fontWeight: 700, textDecoration: "none" }}>
+          Sign up free
+        </Link>
       </p>
-    </div>
-  );
-}
-
-export default function LoginPage() {
-  return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12 bg-white">
-      <Suspense fallback={<div className="w-full max-w-sm text-center text-sm" style={{ color: "var(--brand-charcoal-soft)" }}>Loading...</div>}>
-        <LoginForm />
-      </Suspense>
     </div>
   );
 }

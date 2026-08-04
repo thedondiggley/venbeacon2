@@ -1,25 +1,22 @@
 import Link from "next/link";
-import { Logo } from "@/components/logo";
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen bg-white flex flex-col items-center justify-center px-4 text-center">
-      <Logo variant="mark" size={48} className="mb-6" />
-      <h1 className="text-6xl font-bold mb-4" style={{ color: "var(--brand-green)" }}>404</h1>
-      <h2 className="text-xl font-medium mb-3" style={{ color: "var(--brand-charcoal)" }}>Page not found</h2>
-      <p className="text-sm mb-8 max-w-sm" style={{ color: "var(--brand-charcoal-soft)" }}>
-        The page you're looking for doesn't exist or has been moved.
+    <div style={{ minHeight: "100vh", background: "var(--bg)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24 }}>
+      <div style={{ width: 64, height: 64, background: "var(--green)", borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 24 }}>
+        <span style={{ fontSize: 32, fontWeight: 800, color: "var(--green-dark)" }}>V</span>
+      </div>
+      <h1 style={{ fontSize: 80, fontWeight: 800, color: "var(--text)", letterSpacing: "-0.04em", lineHeight: 1, marginBottom: 8 }}>404</h1>
+      <p style={{ fontSize: 20, fontWeight: 700, color: "var(--text)", marginBottom: 8 }}>Page not found</p>
+      <p style={{ fontSize: 15, color: "var(--text-3)", marginBottom: 32, textAlign: "center", maxWidth: 320 }}>
+        This page doesn't exist or has been moved. Head back to the dashboard.
       </p>
-      <div className="flex gap-3">
-        <Link href="/"
-          className="rounded-lg px-4 py-2 text-sm font-medium text-white"
-          style={{ background: "var(--brand-green)" }}>
-          Go home
+      <div style={{ display: "flex", gap: 12 }}>
+        <Link href="/dashboard" style={{ background: "var(--green)", color: "var(--green-dark)", fontSize: 14, fontWeight: 700, padding: "11px 24px", borderRadius: 9999, textDecoration: "none" }}>
+          Go to dashboard
         </Link>
-        <Link href="/dashboard"
-          className="rounded-lg px-4 py-2 text-sm font-medium border"
-          style={{ borderColor: "var(--brand-line)", color: "var(--brand-charcoal)" }}>
-          Dashboard
+        <Link href="/" style={{ background: "var(--surface)", color: "var(--text-2)", fontSize: 14, fontWeight: 600, padding: "11px 24px", borderRadius: 9999, textDecoration: "none", border: "1px solid var(--border-2)" }}>
+          Home
         </Link>
       </div>
     </div>

@@ -47,8 +47,8 @@ export default async function SchedulePage() {
       <ScheduleManager
         vendorId={vendor.id}
         isPro={vendor.is_pro}
-        activeCount={activeCount}
-        initialLocations={(locations as Location[]) ?? []}
+        
+        locations={(locations as Location[]) ?? []}
       />
     </div>
   );

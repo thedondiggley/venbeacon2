@@ -37,14 +37,14 @@ export default async function VenuesPage() {
             Unlock venue opportunities
           </a>
         </div>
-        <VenueBoard initialListings={[]} isPro={false} previewCount={count ?? 0} />
+        <VenueBoard listings={[]} isPro={false} />
       </div>
     );
   }
 
   const { data: listings } = await supabase
     .from("venue_listings")
-    .select("id, venue_name, venue_type, city, slug, days_available, hours_available, description, max_trucks, created_at")
+    .select("id, venue_name, venue_type, city, slug, days_available, hours_available, description, max_trucks, has_electrical, has_water, has_restrooms, vendor_fee, requires_permit, requires_insurance, expected_traffic, created_at")
     .eq("is_approved", true)
     .order("created_at", { ascending: false });
 
@@ -63,7 +63,7 @@ export default async function VenuesPage() {
           Know a venue? List it →
         </a>
       </div>
-      <VenueBoard initialListings={(listings ?? []) as VenueListing[]} isPro={true} previewCount={0} />
+      <VenueBoard listings={(listings ?? []) as VenueListing[]} isPro={true} />
     </div>
   );
 }

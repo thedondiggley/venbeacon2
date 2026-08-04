@@ -48,8 +48,7 @@ export default async function BookingsPage() {
         </p>
       </div>
       <BookingsList
-        vendorId={vendor.id}
-        initialBookings={(bookings ?? []) as Booking[]}
+        bookings={(bookings ?? []) as Booking[]}
       />
     </div>
   );
